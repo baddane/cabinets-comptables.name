@@ -181,6 +181,36 @@ def generate_cabinet_pages(
     log.info(f"  ✅ {len(data)} pages cabinets générées")
 
 
+def generate_search_index(data: list[dict], cities: list[dict]) -> None:
+    """Génère /search-index.json pour le moteur de recherche côté client."""
+    index = []
+
+    # Villes en premier (priorité dans les résultats)
+    for city in sorted(cities, key=lambda c: -c["count"]):
+        index.append({
+            "t": "v",                  # type: ville
+            "n": city["name"],         # name
+            "s": city["slug"],         # slug
+            "c": city["count"],        # count
+        })
+
+    # Cabinets (nom + ville + slug)
+    for cabinet in data:
+        index.append({
+            "t": "c",                              # type: cabinet
+            "n": cabinet["name"],                  # name
+            "v": cabinet.get("city", ""),          # ville
+            "s": cabinet["slug"],                  # slug
+        })
+
+    output_path = OUTPUT_DIR / "search-index.json"
+    output_path.write_text(
+        json.dumps(index, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    log.info(f"  ✅ search-index.json généré ({len(index)} entrées)")
+
+
 def generate_sitemap(env: Environment, data: list[dict], cities: list[dict]) -> None:
     tpl = env.get_template("sitemap.xml.j2")
     xml = tpl.render(
@@ -417,6 +447,7 @@ def main():
     generate_villes_index(env, cities, data)
     generate_city_pages(env, cities_grouped, cities)
     generate_cabinet_pages(env, data, cities_grouped)
+    generate_search_index(data, cities)
     generate_sitemap(env, data, cities)
     generate_robots(OUTPUT_DIR)
     generate_404(env)
