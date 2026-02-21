@@ -37,8 +37,18 @@
           <div class="flex items-center gap-2">
             <span class="text-amber-400 text-lg">★</span>
             <span class="font-semibold text-gray-800">{{ cabinet.rating }}/5</span>
-            <span class="text-xs text-gray-400">— Note moyenne</span>
+            {% if cabinet.reviews_count and cabinet.reviews_count > 0 %}
+            <span class="text-xs text-gray-400">— {{ cabinet.reviews_count }} avis Google</span>
+            {% else %}
+            <span class="text-xs text-gray-400">— Note Google Maps</span>
+            {% endif %}
           </div>
+          {% endif %}
+          {% if cabinet.google_maps_url %}
+          <a href="{{ cabinet.google_maps_url }}" target="_blank" rel="nofollow noopener"
+             class="inline-flex items-center gap-1 text-xs text-blue-500 hover:underline mt-1">
+            📍 Voir sur Google Maps
+          </a>
           {% endif %}
         </div>
       </div>
@@ -90,8 +100,26 @@
       </dl>
     </div>
 
-    <!-- Google Maps embed (statique via URL) -->
-    {% if cabinet.address %}
+    <!-- Google Maps embed -->
+    {% if cabinet.lat and cabinet.lng %}
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+      <h2 class="font-bold text-gray-900 mb-4 text-lg">Localisation</h2>
+      <div class="rounded-lg overflow-hidden border border-gray-200" style="height:300px;">
+        <iframe
+          width="100%"
+          height="300"
+          style="border:0;"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          src="https://maps.google.com/maps?q={{ cabinet.lat }},{{ cabinet.lng }}&z=16&output=embed"
+          title="Localisation de {{ cabinet.name }}">
+        </iframe>
+      </div>
+      <p class="text-xs text-gray-400 mt-2">
+        {% if cabinet.address %}{{ cabinet.address }}, {% endif %}{{ cabinet.postal_code }} {{ cabinet.city }}
+      </p>
+    </div>
+    {% elif cabinet.address %}
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
       <h2 class="font-bold text-gray-900 mb-4 text-lg">Localisation</h2>
       <div class="rounded-lg overflow-hidden border border-gray-200" style="height:300px;">
@@ -210,8 +238,14 @@
     "ratingValue": "{{ cabinet.rating }}",
     "bestRating": "5",
     "worstRating": "1",
-    "ratingCount": "1"
+    "ratingCount": "{{ cabinet.reviews_count if cabinet.reviews_count else 1 }}"
   },{% endif %}
+  {% if cabinet.lat and cabinet.lng %}"geo": {
+    "@type": "GeoCoordinates",
+    "latitude": "{{ cabinet.lat }}",
+    "longitude": "{{ cabinet.lng }}"
+  },{% endif %}
+  {% if cabinet.google_maps_url %}"hasMap": "{{ cabinet.google_maps_url }}",{% endif %}
   "areaServed": "{{ cabinet.city }}",
   "priceRange": "€€"
 }

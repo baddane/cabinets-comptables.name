@@ -26,10 +26,13 @@ jobs:
       - name: Installer les dépendances
         run: pip install -r requirements.txt
 
-      - name: Scraper PagesJaunes
-        run: python scraper/scrape_pages_jaunes.py
+      - name: Scraper Google Places API
+        run: python scraper/scrape_google_places.py
         continue-on-error: true
-        # Si le scraping échoue, le générateur utilise les données existantes ou de démo
+        # Sans clé API → génère des données de démo
+        # Avec clé : ajouter GOOGLE_PLACES_API_KEY dans GitHub Secrets
+        env:
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
 
       - name: Nettoyer les données
         run: python scraper/clean_data.py
