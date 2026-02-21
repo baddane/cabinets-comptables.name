@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Annuaire Cabinets Comptables France{% endblock %}</title>
+  <meta name="description" content="{% block description %}Trouvez un cabinet comptable en France. Annuaire des experts-comptables par ville.{% endblock %}">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://cabinets-comptables.name{% block canonical %}/{% endblock %}">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Cabinets-Comptables.name">
+  <meta property="og:title" content="{% block og_title %}Annuaire Cabinets Comptables France{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Trouvez un cabinet comptable en France.{% endblock %}">
+  <meta property="og:url" content="https://cabinets-comptables.name{% block og_url %}/{% endblock %}">
+
+  <!-- TailwindCSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: { 700: '#1e3a5f', 800: '#162d4a', 900: '#0f1f33' },
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- ADSENSE_SLOT_HEAD -->
+
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .breadcrumb a:not(:last-child)::after { content: ' › '; margin: 0 4px; color: #9ca3af; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+  <!-- Navigation -->
+  <header class="bg-navy-800 shadow-md" style="background-color:#162d4a;">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3">
+        <!-- Logo placeholder -->
+        <div class="w-10 h-10 bg-blue-400 rounded-lg flex items-center justify-center text-white font-bold text-lg">C</div>
+        <div>
+          <span class="text-white font-bold text-lg leading-tight block">Cabinets-Comptables</span>
+          <span class="text-blue-300 text-xs">.name — Annuaire national</span>
+        </div>
+      </a>
+      <nav class="hidden md:flex items-center gap-6 text-sm">
+        <a href="/" class="text-blue-200 hover:text-white transition">Accueil</a>
+        <a href="/villes/" class="text-blue-200 hover:text-white transition">Villes</a>
+        <a href="/contact/" class="text-blue-200 hover:text-white transition">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ADSENSE_SLOT_HEADER_BANNER -->
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-16 border-t border-gray-200 bg-white">
+    <div class="max-w-6xl mx-auto px-4 py-10">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div>
+          <h3 class="font-bold text-gray-900 mb-3">Cabinets-Comptables.name</h3>
+          <p class="text-sm text-gray-500">
+            Annuaire national des cabinets d'expertise comptable en France.
+            Trouvez rapidement un expert-comptable près de chez vous.
+          </p>
+        </div>
+        <div>
+          <h3 class="font-bold text-gray-900 mb-3">Grandes villes</h3>
+          <ul class="text-sm text-gray-500 space-y-1">
+            <li><a href="/villes/paris/" class="hover:text-blue-600">Cabinets comptables Paris</a></li>
+            <li><a href="/villes/lyon/" class="hover:text-blue-600">Cabinets comptables Lyon</a></li>
+            <li><a href="/villes/marseille/" class="hover:text-blue-600">Cabinets comptables Marseille</a></li>
+            <li><a href="/villes/bordeaux/" class="hover:text-blue-600">Cabinets comptables Bordeaux</a></li>
+            <li><a href="/villes/toulouse/" class="hover:text-blue-600">Cabinets comptables Toulouse</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-bold text-gray-900 mb-3">Informations</h3>
+          <ul class="text-sm text-gray-500 space-y-1">
+            <li><a href="/mentions-legales/" class="hover:text-blue-600">Mentions légales</a></li>
+            <li><a href="/contact/" class="hover:text-blue-600">Contact</a></li>
+            <li><a href="/sitemap.xml" class="hover:text-blue-600">Sitemap</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-8 pt-6 border-t border-gray-100 text-xs text-gray-400 text-center">
+        © 2025 Cabinets-Comptables.name — Annuaire non officiel à titre informatif.
+        Les données proviennent de sources publiques.
+      </div>
+    </div>
+  </footer>
+
+  <!-- ADSENSE_SLOT_FOOTER -->
+
+</body>
+</html>

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Cabinets Comptables à {{ city_name }} ({{ city_count }} experts-comptables) — Annuaire{% endblock %}
+{% block description %}Trouvez un cabinet comptable à {{ city_name }} : liste complète de {{ city_count }} experts-comptables avec adresse et téléphone. Comptabilité, bilan, liasse fiscale à {{ city_name }}.{% endblock %}
+{% block canonical %}/villes/{{ city_slug }}/{% endblock %}
+{% block og_title %}{{ city_count }} Cabinets Comptables à {{ city_name }}{% endblock %}
+{% block og_description %}Annuaire des experts-comptables à {{ city_name }}. Adresse, téléphone, avis. Trouvez votre cabinet comptable à {{ city_name }}.{% endblock %}
+{% block og_url %}/villes/{{ city_slug }}/{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<nav class="breadcrumb flex items-center text-sm text-gray-500 mb-6">
+  <a href="/" class="hover:text-blue-600">Accueil</a>
+  <a href="/villes/" class="hover:text-blue-600">Cabinets Comptables</a>
+  <span class="text-gray-700 font-medium">{{ city_name }}</span>
+</nav>
+
+<!-- En-tête ville -->
+<div class="flex items-start justify-between mb-8 gap-4">
+  <div>
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+      Cabinets Comptables à {{ city_name }}
+    </h1>
+    <p class="text-gray-500">
+      {{ city_count }} cabinet{% if city_count > 1 %}s{% endif %} d'expertise comptable référencé{% if city_count > 1 %}s{% endif %}
+    </p>
+  </div>
+  <div class="hidden md:flex items-center gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-4 py-2">
+    <span class="text-2xl font-bold">{{ city_count }}</span>
+    <span class="text-xs text-blue-500 leading-tight">cabinets<br>référencés</span>
+  </div>
+</div>
+
+<!-- ADSENSE_SLOT_VILLE_TOP -->
+
+<!-- Liste des cabinets -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Colonne principale -->
+  <div class="lg:col-span-2 space-y-4">
+    {% for cabinet in cabinets %}
+    <article class="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition p-5">
+      <div class="flex items-start gap-4">
+        <!-- Avatar lettre -->
+        <div class="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-lg"
+             style="background-color: #1e3a5f;">
+          {{ cabinet.name[0] | upper }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <h2 class="font-bold text-gray-900 text-lg mb-1">
+            <a href="/cabinets/{{ cabinet.slug }}/" class="hover:text-blue-700 transition">
+              {{ cabinet.name }}
+            </a>
+          </h2>
+
+          <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mb-3">
+            {% if cabinet.address %}
+            <span>📍 {{ cabinet.address }}, {{ cabinet.postal_code }} {{ city_name }}</span>
+            {% endif %}
+            {% if cabinet.phone %}
+            <span>📞 <a href="tel:{{ cabinet.phone | replace(' ', '') }}" class="hover:text-blue-600">{{ cabinet.phone }}</a></span>
+            {% endif %}
+          </div>
+
+          <div class="flex items-center gap-3">
+            {% if cabinet.rating %}
+            <span class="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
+              ★ {{ cabinet.rating }}/5
+            </span>
+            {% endif %}
+            {% if cabinet.website %}
+            <span class="text-xs bg-green-50 text-green-700 border border-green-200 rounded-full px-2 py-0.5">
+              🌐 Site web
+            </span>
+            {% endif %}
+            <a href="/cabinets/{{ cabinet.slug }}/"
+               class="ml-auto text-sm text-blue-600 hover:text-blue-800 font-medium hover:underline">
+              Voir la fiche →
+            </a>
+          </div>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="space-y-6">
+
+    <!-- ADSENSE_SLOT_VILLE_SIDEBAR -->
+
+    <!-- Autres villes -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+      <h3 class="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide">Autres villes</h3>
+      <ul class="space-y-2">
+        {% for other_city in other_cities %}
+        <li>
+          <a href="/villes/{{ other_city.slug }}/"
+             class="flex items-center justify-between text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg px-2 py-1.5 transition">
+            <span>{{ other_city.name }}</span>
+            <span class="text-xs text-gray-400">{{ other_city.count }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Info SEO -->
+    <div class="bg-blue-50 border border-blue-100 rounded-xl p-5">
+      <h3 class="font-bold text-blue-900 mb-2 text-sm">Expert-comptable à {{ city_name }}</h3>
+      <p class="text-xs text-blue-700 leading-relaxed">
+        Les cabinets comptables à {{ city_name }} proposent des services de comptabilité générale,
+        établissement du bilan, liasse fiscale, déclarations TVA, conseil fiscal et gestion de la paie.
+        L'expert-comptable est un partenaire clé pour les TPE et PME de {{ city_name }}.
+      </p>
+    </div>
+  </aside>
+</div>
+
+<!-- JSON-LD BreadcrumbList -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://cabinets-comptables.name/" },
+    { "@type": "ListItem", "position": 2, "name": "Cabinets Comptables", "item": "https://cabinets-comptables.name/villes/" },
+    { "@type": "ListItem", "position": 3, "name": "{{ city_name }}", "item": "https://cabinets-comptables.name/villes/{{ city_slug }}/" }
+  ]
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Annuaire Cabinets Comptables France — Trouvez un Expert-Comptable{% endblock %}
+{% block description %}Annuaire complet des cabinets comptables en France. Trouvez un expert-comptable près de chez vous : adresse, téléphone, horaires. {{ total_cabinets }} cabinets référencés dans {{ total_cities }} villes.{% endblock %}
+{% block og_title %}Annuaire Cabinets Comptables France{% endblock %}
+{% block og_description %}{{ total_cabinets }} cabinets comptables référencés dans {{ total_cities }} villes françaises. Trouvez votre expert-comptable.{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<section class="text-center py-12 mb-10">
+  <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+    Trouvez un Cabinet Comptable<br class="hidden md:block"> en France
+  </h1>
+  <p class="text-lg text-gray-500 max-w-2xl mx-auto mb-8">
+    Annuaire national des <strong>cabinets comptables</strong> et <strong>experts-comptables</strong>.
+    Comptabilité, bilan, liasse fiscale, déclarations fiscales&nbsp;: trouvez le professionnel adapté à votre situation.
+  </p>
+  <div class="inline-flex items-center gap-4 bg-blue-50 border border-blue-100 rounded-full px-6 py-2 text-sm text-blue-700">
+    <span>✅ {{ total_cabinets }} cabinets référencés</span>
+    <span class="text-blue-300">|</span>
+    <span>🏙️ {{ total_cities }} villes couvertes</span>
+    <span class="text-blue-300">|</span>
+    <span>🔄 Mis à jour mensuellement</span>
+  </div>
+</section>
+
+<!-- ADSENSE_SLOT_HOME_TOP -->
+
+<!-- Barre de recherche visuelle (décorative, liens statiques) -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-12">
+  <p class="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide">Chercher par ville</p>
+  <div class="flex flex-wrap gap-2">
+    {% for city in cities %}
+    <a href="/villes/{{ city.slug }}/"
+       class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-sm text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition">
+      {{ city.name }}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Grille des villes -->
+<section class="mb-12">
+  <h2 class="text-2xl font-bold text-gray-900 mb-6">
+    Cabinets Comptables par Ville
+  </h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    {% for city in cities %}
+    <a href="/villes/{{ city.slug }}/"
+       class="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition p-5 flex flex-col">
+      <!-- Couleur décorative -->
+      <div class="w-full h-2 rounded-full mb-4" style="background-color: {{ city.color }};"></div>
+      <h3 class="font-bold text-gray-900 group-hover:text-blue-700 transition mb-1">
+        {{ city.name }}
+      </h3>
+      <p class="text-sm text-gray-400">{{ city.count }} cabinet{% if city.count > 1 %}s{% endif %}</p>
+      <span class="mt-3 text-xs text-blue-600 font-medium group-hover:underline">
+        Voir les cabinets →
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ADSENSE_SLOT_HOME_MID -->
+
+<!-- Section SEO -->
+<section class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 mb-12">
+  <h2 class="text-xl font-bold text-gray-900 mb-4">
+    Pourquoi faire appel à un cabinet comptable&nbsp;?
+  </h2>
+  <div class="grid md:grid-cols-2 gap-6 text-sm text-gray-600 leading-relaxed">
+    <div>
+      <h3 class="font-semibold text-gray-800 mb-2">Expertise comptable et fiscale</h3>
+      <p>
+        Un <strong>expert-comptable</strong> vous accompagne dans la gestion de votre
+        <strong>comptabilité</strong>, l'établissement de votre <strong>bilan</strong>,
+        de votre <strong>liasse fiscale</strong> et de vos déclarations TVA.
+        Qu'il s'agisse d'une TPE, d'une PME ou d'un indépendant, le cabinet comptable
+        est un partenaire essentiel.
+      </p>
+    </div>
+    <div>
+      <h3 class="font-semibold text-gray-800 mb-2">Comment choisir son cabinet comptable&nbsp;?</h3>
+      <p>
+        Privilégiez un cabinet proche de votre siège social pour faciliter les échanges.
+        Vérifiez que l'expert-comptable est inscrit à l'<strong>Ordre des Experts-Comptables</strong>.
+        Comparez les honoraires et les services inclus (paie, juridique, conseil fiscal).
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Derniers cabinets ajoutés -->
+<section class="mb-8">
+  <h2 class="text-2xl font-bold text-gray-900 mb-6">Cabinets récemment référencés</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for cabinet in recent_cabinets %}
+    <a href="/cabinets/{{ cabinet.slug }}/"
+       class="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition p-5">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold text-sm"
+             style="background-color: #1e3a5f;">
+          {{ cabinet.name[0] | upper }}
+        </div>
+        <div class="min-w-0">
+          <h3 class="font-semibold text-gray-900 group-hover:text-blue-700 transition text-sm leading-tight mb-1 truncate">
+            {{ cabinet.name }}
+          </h3>
+          <p class="text-xs text-gray-500">{{ cabinet.city }}</p>
+          {% if cabinet.rating %}
+          <p class="text-xs text-amber-500 mt-1">★ {{ cabinet.rating }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- JSON-LD WebSite -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Cabinets-Comptables.name",
+  "url": "https://cabinets-comptables.name",
+  "description": "Annuaire national des cabinets d'expertise comptable en France",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://cabinets-comptables.name/villes/{search_term_string}/",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Homepage -->
+  <url>
+    <loc>https://cabinets-comptables.name/</loc>
+    <lastmod>{{ lastmod }}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Index villes -->
+  <url>
+    <loc>https://cabinets-comptables.name/villes/</loc>
+    <lastmod>{{ lastmod }}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Pages villes -->
+  {% for city in cities %}
+  <url>
+    <loc>https://cabinets-comptables.name/villes/{{ city.slug }}/</loc>
+    <lastmod>{{ lastmod }}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  {% endfor %}
+
+  <!-- Pages cabinets -->
+  {% for cabinet in cabinets %}
+  <url>
+    <loc>https://cabinets-comptables.name/cabinets/{{ cabinet.slug }}/</loc>
+    <lastmod>{{ lastmod }}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  {% endfor %}
+
+</urlset>

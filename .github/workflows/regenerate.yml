@@ -1,0 +1,64 @@
+name: Régénération mensuelle du site
+
+on:
+  schedule:
+    # Le 1er de chaque mois à 03:00 UTC
+    - cron: "0 3 1 * *"
+  workflow_dispatch:
+    # Permet de lancer manuellement depuis l'onglet Actions
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: Scraper PagesJaunes
+        run: python scraper/scrape_pages_jaunes.py
+        continue-on-error: true
+        # Si le scraping échoue, le générateur utilise les données existantes ou de démo
+
+      - name: Nettoyer les données
+        run: python scraper/clean_data.py
+
+      - name: Générer le site statique
+        run: python generator/generate.py
+
+      - name: Vérifier la génération
+        run: |
+          count=$(find output/ -name "*.html" | wc -l)
+          echo "✅ ${count} fichiers HTML générés"
+          if [ "$count" -lt 100 ]; then
+            echo "❌ Trop peu de fichiers générés (${count} < 100)"
+            exit 1
+          fi
+
+      - name: Commit et push des changements
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add output/ data/
+          git diff --cached --quiet && echo "Aucun changement" && exit 0
+          git commit -m "chore: régénération automatique du site $(date +%Y-%m-%d)"
+          git push
+
+      - name: Déployer sur Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: "--prod"
