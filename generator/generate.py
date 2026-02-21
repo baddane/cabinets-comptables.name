@@ -227,6 +227,123 @@ def generate_404(env: Environment) -> None:
     log.info("  ✅ Page 404 générée")
 
 
+def generate_contact() -> None:
+    html = """<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact — Cabinets-Comptables.name</title>
+  <meta name="description" content="Contactez Cabinets-Comptables.name pour toute question, signalement d'erreur ou demande de mise à jour concernant l'annuaire des cabinets comptables.">
+  <meta name="robots" content="index, follow">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+
+  <!-- Navigation -->
+  <header class="shadow-md" style="background-color:#162d4a;">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-blue-400 rounded-lg flex items-center justify-center text-white font-bold text-lg">C</div>
+        <div>
+          <span class="text-white font-bold text-lg leading-tight block">Cabinets-Comptables</span>
+          <span class="text-blue-300 text-xs">.name — Annuaire national</span>
+        </div>
+      </a>
+      <nav class="hidden md:flex items-center gap-6 text-sm">
+        <a href="/" class="text-blue-200 hover:text-white transition">Accueil</a>
+        <a href="/villes/" class="text-blue-200 hover:text-white transition">Villes</a>
+        <a href="/contact/" class="text-white font-medium">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-12">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Contact</h1>
+    <p class="text-gray-500 mb-8">Une erreur dans notre annuaire&nbsp;? Une mise à jour à signaler&nbsp;? Écrivez-nous.</p>
+
+    <div class="grid md:grid-cols-2 gap-8">
+
+      <!-- Formulaire -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="font-bold text-gray-800 mb-4">Envoyer un message</h2>
+        <form action="mailto:contact@cabinets-comptables.name" method="GET" class="space-y-4">
+          <div>
+            <label for="subject" class="block text-sm font-medium text-gray-700 mb-1">Objet</label>
+            <select id="subject" name="subject"
+                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="Signalement d'erreur">Signalement d'erreur</option>
+              <option value="Mise à jour d'informations">Mise à jour d'informations</option>
+              <option value="Demande de suppression">Demande de suppression</option>
+              <option value="Partenariat">Partenariat</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+          <div>
+            <label for="body" class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+            <textarea id="body" name="body" rows="5"
+                      placeholder="Décrivez votre demande..."
+                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+          </div>
+          <button type="submit"
+                  class="w-full bg-blue-600 text-white font-medium rounded-lg px-4 py-2 hover:bg-blue-700 transition text-sm">
+            Envoyer par e-mail
+          </button>
+        </form>
+        <p class="text-xs text-gray-400 mt-3">
+          Ce formulaire ouvre votre client e-mail. Vous pouvez aussi écrire directement à
+          <a href="mailto:contact@cabinets-comptables.name" class="text-blue-500 hover:underline">contact@cabinets-comptables.name</a>.
+        </p>
+      </div>
+
+      <!-- Informations -->
+      <div class="space-y-5">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 class="font-bold text-gray-800 mb-3">Signaler une erreur</h2>
+          <p class="text-sm text-gray-600 leading-relaxed">
+            Les données de cet annuaire proviennent de sources publiques et sont mises à jour
+            mensuellement. Si vous constatez une erreur (adresse incorrecte, cabinet fermé,
+            numéro erroné), merci de nous le signaler.
+          </p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 class="font-bold text-gray-800 mb-3">Demande de suppression</h2>
+          <p class="text-sm text-gray-600 leading-relaxed">
+            Conformément au RGPD, vous pouvez demander la suppression des informations
+            professionnelles vous concernant. Précisez le nom du cabinet et la ville dans
+            votre message.
+          </p>
+        </div>
+
+        <div class="bg-blue-50 rounded-xl border border-blue-100 p-5">
+          <p class="text-sm text-blue-700">
+            <strong>Délai de réponse&nbsp;:</strong> nous traitons les demandes sous 5 jours ouvrés.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-16 border-t border-gray-200 bg-white">
+    <div class="max-w-6xl mx-auto px-4 py-8 text-center text-xs text-gray-400">
+      <p>© 2025 Cabinets-Comptables.name — Annuaire non officiel à titre informatif.</p>
+      <div class="flex justify-center gap-4 mt-2">
+        <a href="/" class="hover:text-blue-600">Accueil</a>
+        <a href="/villes/" class="hover:text-blue-600">Villes</a>
+        <a href="/mentions-legales/" class="hover:text-blue-600">Mentions légales</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>"""
+    write_file(OUTPUT_DIR / "contact" / "index.html", html)
+    log.info("  ✅ Page contact générée")
+
+
 def generate_mentions_legales() -> None:
     html = """<!DOCTYPE html>
 <html lang="fr">
@@ -304,6 +421,7 @@ def main():
     generate_robots(OUTPUT_DIR)
     generate_404(env)
     generate_mentions_legales()
+    generate_contact()
 
     # 5. Résumé
     total_html = sum(1 for _ in OUTPUT_DIR.rglob("*.html"))
