@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% set active = "cabinets" %}
+
+{% block title %}{{ "Modifier" if mode == "edit" else "Ajouter" }} un cabinet{% endblock %}
+{% block page_title %}
+  {{ "Modifier" if mode == "edit" else "Ajouter" }} un cabinet
+  {% if mode == "edit" and cabinet.name %}
+    <span class="ml-2 text-sm font-normal text-slate-500">— {{ cabinet.name }}</span>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl">
+  {% if error %}
+  <div class="mb-5 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+    <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+    </svg>
+    {{ error }}
+  </div>
+  {% endif %}
+
+  <form method="POST" action="/admin/cabinets/{{ idx ~ '/edit' if mode == 'edit' else 'new' }}"
+        class="space-y-6">
+
+    <!-- Infos principales -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">
+        Informations principales <span class="text-red-500">*</span>
+      </h2>
+      <div class="grid grid-cols-1 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">
+            Nom du cabinet <span class="text-red-500">*</span>
+          </label>
+          <input type="text" name="name" required
+                 value="{{ cabinet.get('name', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="Cabinet Dupont Expertise Comptable">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">
+              Ville <span class="text-red-500">*</span>
+            </label>
+            <input type="text" name="city" required
+                   value="{{ cabinet.get('city', '') }}"
+                   class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="Paris">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Code postal</label>
+            <input type="text" name="postal_code"
+                   value="{{ cabinet.get('postal_code', '') }}"
+                   class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="75008">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Adresse</label>
+          <input type="text" name="address"
+                 value="{{ cabinet.get('address', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="12 rue de la Paix">
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">Contact</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
+          <input type="tel" name="phone"
+                 value="{{ cabinet.get('phone', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="01 23 45 67 89">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Site web</label>
+          <input type="url" name="website"
+                 value="{{ cabinet.get('website', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="https://www.cabinet-dupont.fr">
+        </div>
+      </div>
+    </div>
+
+    <!-- Google / Avis -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">Note Google</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Note (0–5)</label>
+          <input type="number" name="rating" min="0" max="5" step="0.1"
+                 value="{{ cabinet.get('rating', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="4.3">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Nombre d'avis</label>
+          <input type="number" name="reviews_count" min="0"
+                 value="{{ cabinet.get('reviews_count', 0) }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="42">
+        </div>
+      </div>
+    </div>
+
+    <!-- GPS + SIRENE -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">GPS &amp; Identifiants SIRENE</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Latitude</label>
+          <input type="number" name="lat" step="any"
+                 value="{{ cabinet.get('lat', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="48.8566">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Longitude</label>
+          <input type="number" name="lng" step="any"
+                 value="{{ cabinet.get('lng', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="2.3522">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">SIREN</label>
+          <input type="text" name="siren" maxlength="9" pattern="[0-9]{9}"
+                 value="{{ cabinet.get('siren', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="552108722">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">SIRET</label>
+          <input type="text" name="siret" maxlength="14" pattern="[0-9]{14}"
+                 value="{{ cabinet.get('siret', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="55210872200038">
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-3">
+      <button type="submit"
+              class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors">
+        {{ "Enregistrer les modifications" if mode == "edit" else "Créer le cabinet" }}
+      </button>
+      <a href="/admin/cabinets"
+         class="px-6 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-lg transition-colors">
+        Annuler
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

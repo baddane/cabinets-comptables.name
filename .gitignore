@@ -29,3 +29,8 @@ build/
 # Env
 .env
 .env.local
+
+# Admin — credentials et logs (ne jamais versionner)
+admin/.credentials
+admin/logs/
+data/.enrich_progress.json
