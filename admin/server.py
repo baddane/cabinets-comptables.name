@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """
 Backoffice Admin — cabinets-comptables.name
-Accès : http://localhost:8080/admin
 
-Lancement :
+Lancement local :
     pip install -r admin/requirements.txt
     python admin/server.py
+    → http://localhost:8080/admin
 
-Variables d'environnement optionnelles :
-    ADMIN_USERNAME          Login admin (défaut: admin)
-    ADMIN_PASSWORD_HASH     Hash bcrypt du mot de passe
-    ADMIN_SECRET_KEY        Clé de signature JWT (auto-générée si absente)
-    GOOGLE_PLACES_API_KEY   Clé API Google Places
-    PORT                    Port d'écoute (défaut: 8080)
+Déploiement Railway (public) :
+    Variables à définir dans Railway Dashboard :
+      ADMIN_SECRET_KEY   → chaîne aléatoire longue (ex: openssl rand -hex 32)
+      ADMIN_USERNAME     → votre login (défaut: admin)
+      ADMIN_PASSWORD     → mot de passe initial (si non défini, généré au démarrage)
+      GOOGLE_PLACES_API_KEY → clé Google Places (optionnel)
+      PORT               → 8080 (défini dans railway.toml)
 """
 
 import asyncio
@@ -68,8 +69,13 @@ SECRET_KEY        = os.environ.get("ADMIN_SECRET_KEY") or secrets.token_hex(32)
 ADMIN_USERNAME    = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASS_HASH   = os.environ.get("ADMIN_PASSWORD_HASH", "")
 GOOGLE_API_KEY    = os.environ.get("GOOGLE_PLACES_API_KEY", "")
+# Si ADMIN_PASSWORD est défini (Railway), on le hashe au démarrage
+_initial_pw = os.environ.get("ADMIN_PASSWORD", "")
 
 # Première exécution : générer des credentials
+if not ADMIN_PASS_HASH and _initial_pw:
+    ADMIN_PASS_HASH = _hash_password(_initial_pw)
+
 if not ADMIN_PASS_HASH:
     if CREDS_FILE.exists():
         with open(CREDS_FILE) as f:

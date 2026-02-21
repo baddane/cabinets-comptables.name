@@ -2,6 +2,14 @@
   "outputDirectory": "output",
   "cleanUrls": true,
   "trailingSlash": false,
+
+  "rewrites": [
+    {
+      "source": "/admin/:path*",
+      "destination": "https://REMPLACER-PAR-VOTRE-URL-RAILWAY.up.railway.app/admin/:path*"
+    }
+  ],
+
   "headers": [
     {
       "source": "/(.*)",
