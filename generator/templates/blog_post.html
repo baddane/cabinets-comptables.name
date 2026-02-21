@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} — Blog Cabinets-Comptables.name{% endblock %}
+{% block description %}{{ post.description }}{% endblock %}
+{% block canonical %}/blog/{{ post.slug }}/{% endblock %}
+{% block og_title %}{{ post.title }}{% endblock %}
+{% block og_description %}{{ post.description }}{% endblock %}
+{% block og_url %}/blog/{{ post.slug }}/{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<nav class="text-sm text-gray-500 mb-6 flex flex-wrap items-center gap-1" aria-label="Fil d'Ariane">
+  <a href="/" class="hover:text-blue-600">Accueil</a>
+  <span class="text-gray-400">›</span>
+  <a href="/blog/" class="hover:text-blue-600">Blog</a>
+  <span class="text-gray-400">›</span>
+  <span class="text-gray-700 font-medium truncate max-w-xs">{{ post.title }}</span>
+</nav>
+
+<div class="max-w-3xl">
+
+  <!-- En-tête article -->
+  <header class="mb-8">
+    <div class="flex items-center gap-3 mb-4">
+      <span class="text-xs font-semibold px-3 py-1 rounded-full"
+            style="background-color: {{ post.color }}22; color: {{ post.color }};">
+        {{ post.category }}
+      </span>
+      <span class="text-sm text-gray-400">{{ post.reading_time }} min de lecture</span>
+      <span class="text-gray-300">·</span>
+      <time class="text-sm text-gray-400" datetime="{{ post.date }}">{{ post.date_fr }}</time>
+    </div>
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 leading-tight mb-4">
+      {{ post.title }}
+    </h1>
+    <p class="text-lg text-gray-500 leading-relaxed">{{ post.description }}</p>
+    <div class="mt-6 border-t border-gray-100"></div>
+  </header>
+
+  <!-- Contenu de l'article -->
+  <article class="prose-article text-gray-700 leading-relaxed mb-12">
+    {{ post.content | safe }}
+  </article>
+
+  <!-- Styles prose inline -->
+  <style>
+    .prose-article h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #111827;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+    }
+    .prose-article p { margin-bottom: 1rem; }
+    .prose-article ul {
+      list-style: disc;
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .prose-article li { margin-bottom: 0.35rem; }
+    .prose-article strong { color: #1e3a5f; }
+    .prose-article a { color: #2563eb; text-decoration: underline; }
+    .prose-article a:hover { color: #1d4ed8; }
+  </style>
+
+  <!-- Séparateur -->
+  <div class="border-t border-gray-100 mb-10"></div>
+
+  <!-- CTA -->
+  <aside class="bg-blue-50 border border-blue-100 rounded-2xl p-7 mb-10 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+    <div class="flex-1">
+      <h3 class="font-bold text-gray-900 mb-1">Besoin d'un expert-comptable ?</h3>
+      <p class="text-sm text-gray-600">
+        Consultez notre annuaire pour trouver un cabinet comptable qualifié près de chez vous.
+      </p>
+    </div>
+    <a href="/"
+       class="flex-shrink-0 bg-blue-600 text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-blue-700 transition text-sm whitespace-nowrap">
+      Trouver un cabinet →
+    </a>
+  </aside>
+
+  <!-- Navigation vers autres articles -->
+  {% if other_posts %}
+  <section>
+    <h2 class="text-lg font-bold text-gray-900 mb-4">Autres articles du blog</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {% for p in other_posts %}
+      <a href="/blog/{{ p.slug }}/"
+         class="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition p-5 flex flex-col gap-2">
+        <span class="text-xs font-semibold" style="color: {{ p.color }};">{{ p.category }}</span>
+        <h3 class="font-semibold text-gray-900 group-hover:text-blue-700 transition text-sm leading-snug">
+          {{ p.title }}
+        </h3>
+        <span class="text-xs text-blue-600 group-hover:underline mt-auto">Lire →</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+</div>
+
+<!-- JSON-LD Article -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": {{ post.title | tojson }},
+  "description": {{ post.description | tojson }},
+  "datePublished": "{{ post.date }}",
+  "dateModified": "{{ post.date }}",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Cabinets-Comptables.name",
+    "url": "https://cabinets-comptables.name"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://cabinets-comptables.name/blog/{{ post.slug }}/"
+  }
+}
+</script>
+
+{% endblock %}

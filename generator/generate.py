@@ -22,10 +22,12 @@ except ImportError:
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
 
-ROOT        = Path(__file__).parent.parent
-DATA_FILE   = ROOT / "data" / "cabinets.json"
+ROOT         = Path(__file__).parent.parent
+DATA_FILE    = ROOT / "data" / "cabinets.json"
+BLOG_FILE    = ROOT / "data" / "blog_posts.json"
+STATIC_DIR   = ROOT / "static"
 TEMPLATE_DIR = Path(__file__).parent / "templates"
-OUTPUT_DIR  = ROOT / "output"
+OUTPUT_DIR   = ROOT / "output"
 
 # Palette de couleurs pour les villes (décorative)
 CITY_COLORS = [
@@ -34,6 +36,23 @@ CITY_COLORS = [
     "#6366f1", "#a855f7", "#0ea5e9", "#22c55e", "#eab308",
     "#f43f5e", "#64748b", "#2dd4bf", "#fb923c", "#a3e635",
 ]
+
+
+BLOG_COLORS = [
+    "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444",
+]
+
+MONTHS_FR = {
+    "01": "janvier", "02": "février", "03": "mars", "04": "avril",
+    "05": "mai", "06": "juin", "07": "juillet", "08": "août",
+    "09": "septembre", "10": "octobre", "11": "novembre", "12": "décembre",
+}
+
+
+def date_to_fr(iso_date: str) -> str:
+    """Convertit '2025-02-19' en '19 février 2025'."""
+    parts = iso_date.split("-")
+    return f"{int(parts[2])} {MONTHS_FR.get(parts[1], parts[1])} {parts[0]}"
 
 
 def make_env() -> Environment:
@@ -102,13 +121,14 @@ def write_file(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def generate_homepage(env: Environment, cities: list[dict], data: list[dict]) -> None:
+def generate_homepage(env: Environment, cities: list[dict], data: list[dict], blog_posts: list[dict] = None) -> None:
     tpl = env.get_template("index.html")
     html = tpl.render(
         cities=cities,
         total_cabinets=len(data),
         total_cities=len(cities),
         recent_cabinets=data[:12],
+        blog_posts=(blog_posts or [])[:3],
     )
     write_file(OUTPUT_DIR / "index.html", html)
     log.info("  ✅ Homepage générée")
@@ -211,11 +231,12 @@ def generate_search_index(data: list[dict], cities: list[dict]) -> None:
     log.info(f"  ✅ search-index.json généré ({len(index)} entrées)")
 
 
-def generate_sitemap(env: Environment, data: list[dict], cities: list[dict]) -> None:
+def generate_sitemap(env: Environment, data: list[dict], cities: list[dict], blog_posts: list[dict] = None) -> None:
     tpl = env.get_template("sitemap.xml.j2")
     xml = tpl.render(
         cities=cities,
         cabinets=data,
+        blog_posts=blog_posts or [],
         lastmod=date.today().isoformat(),
     )
     write_file(OUTPUT_DIR / "sitemap.xml", xml)
@@ -418,6 +439,48 @@ def generate_mentions_legales() -> None:
     log.info("  ✅ Mentions légales générées")
 
 
+def copy_static_assets() -> None:
+    """Copie le dossier static/ vers output/ (favicon, etc.)."""
+    if not STATIC_DIR.exists():
+        return
+    for src in STATIC_DIR.iterdir():
+        dst = OUTPUT_DIR / src.name
+        shutil.copy2(src, dst)
+    log.info(f"  ✅ Actifs statiques copiés ({list(STATIC_DIR.iterdir()).__len__()} fichiers)")
+
+
+def load_blog_posts() -> list[dict]:
+    if not BLOG_FILE.exists():
+        log.warning("Pas de fichier blog_posts.json trouvé, section blog ignorée.")
+        return []
+    with open(BLOG_FILE, encoding="utf-8") as f:
+        posts = json.load(f)
+    for i, post in enumerate(posts):
+        post["color"] = BLOG_COLORS[i % len(BLOG_COLORS)]
+        post["date_fr"] = date_to_fr(post["date"])
+    log.info(f"  Blog : {len(posts)} articles chargés")
+    return posts
+
+
+def generate_blog(env: Environment, posts: list[dict], total_cabinets: int) -> None:
+    if not posts:
+        return
+
+    # Index du blog
+    tpl_index = env.get_template("blog_index.html")
+    html = tpl_index.render(posts=posts, total_cabinets=total_cabinets)
+    write_file(OUTPUT_DIR / "blog" / "index.html", html)
+
+    # Pages individuelles
+    tpl_post = env.get_template("blog_post.html")
+    for i, post in enumerate(posts):
+        other_posts = [p for j, p in enumerate(posts) if j != i][:4]
+        html = tpl_post.render(post=post, other_posts=other_posts)
+        write_file(OUTPUT_DIR / "blog" / post["slug"] / "index.html", html)
+
+    log.info(f"  ✅ Blog généré : 1 index + {len(posts)} articles")
+
+
 def clean_output() -> None:
     if OUTPUT_DIR.exists():
         shutil.rmtree(OUTPUT_DIR)
@@ -437,22 +500,25 @@ def main():
     data = load_data()
     cities_grouped = group_by_city(data)
     cities = city_meta(cities_grouped)
+    blog_posts = load_blog_posts()
 
     # 3. Init Jinja2
     env = make_env()
 
     # 4. Génération
     log.info("3. Génération des pages...")
-    generate_homepage(env, cities, data)
+    generate_homepage(env, cities, data, blog_posts)
     generate_villes_index(env, cities, data)
     generate_city_pages(env, cities_grouped, cities)
     generate_cabinet_pages(env, data, cities_grouped)
     generate_search_index(data, cities)
-    generate_sitemap(env, data, cities)
+    generate_sitemap(env, data, cities, blog_posts)
     generate_robots(OUTPUT_DIR)
     generate_404(env)
     generate_mentions_legales()
     generate_contact()
+    generate_blog(env, blog_posts, len(data))
+    copy_static_assets()
 
     # 5. Résumé
     total_html = sum(1 for _ in OUTPUT_DIR.rglob("*.html"))
@@ -460,6 +526,7 @@ def main():
     log.info(f"  📄 {total_html} fichiers HTML générés")
     log.info(f"  🏙️  {len(cities)} pages villes")
     log.info(f"  🏢  {len(data)} pages cabinets")
+    log.info(f"  📝  {len(blog_posts)} articles blog")
     log.info(f"  📁 Dossier de sortie : {OUTPUT_DIR}")
     log.info("\n  🚀 Pour déployer sur Vercel :")
     log.info("     vercel --prod")

@@ -9,6 +9,10 @@
   <link rel="canonical" href="https://cabinets-comptables.name/">
   <meta name="theme-color" content="#162d4a">
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
   <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Cabinets-Comptables.name">
@@ -55,6 +59,7 @@
       <nav class="hidden md:flex items-center gap-6 text-sm">
         <a href="/" class="text-blue-200 hover:text-white transition">Accueil</a>
         <a href="/villes/" class="text-blue-200 hover:text-white transition">Villes</a>
+        <a href="/blog/" class="text-blue-200 hover:text-white transition">Blog</a>
         <a href="/contact/" class="text-blue-200 hover:text-white transition">Contact</a>
       </nav>
 
@@ -78,6 +83,7 @@
       <nav class="max-w-6xl mx-auto px-4 py-3 flex flex-col">
         <a href="/" class="text-blue-200 hover:text-white hover:bg-blue-800 transition rounded-lg px-3 py-3 text-sm font-medium">Accueil</a>
         <a href="/villes/" class="text-blue-200 hover:text-white hover:bg-blue-800 transition rounded-lg px-3 py-3 text-sm font-medium">Toutes les villes</a>
+        <a href="/blog/" class="text-blue-200 hover:text-white hover:bg-blue-800 transition rounded-lg px-3 py-3 text-sm font-medium">Blog</a>
         <a href="/contact/" class="text-blue-200 hover:text-white hover:bg-blue-800 transition rounded-lg px-3 py-3 text-sm font-medium">Contact</a>
       </nav>
     </div>
@@ -452,6 +458,64 @@
     </div>
   </div>
 </section>
+
+<!-- Section Blog -->
+
+<section class="mb-12">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-gray-900">Blog Comptabilité</h2>
+    <a href="/blog/" class="text-sm text-blue-600 hover:underline font-medium">Voir tous les articles →</a>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    
+    <a href="/blog/comment-choisir-son-expert-comptable/"
+       class="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition flex flex-col overflow-hidden">
+      <div class="h-1.5 w-full" style="background-color: #3b82f6;"></div>
+      <div class="p-5 flex flex-col flex-1">
+        <span class="text-xs font-semibold mb-2" style="color: #3b82f6;">Conseils</span>
+        <h3 class="font-bold text-gray-900 group-hover:text-blue-700 transition text-sm leading-snug mb-2 flex-1">
+          Comment choisir son expert-comptable : le guide complet
+        </h3>
+        <div class="flex items-center justify-between mt-3">
+          <span class="text-xs text-gray-400">6 min</span>
+          <span class="text-xs text-blue-600 group-hover:underline">Lire →</span>
+        </div>
+      </div>
+    </a>
+    
+    <a href="/blog/tva-guide-complet-entrepreneur/"
+       class="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition flex flex-col overflow-hidden">
+      <div class="h-1.5 w-full" style="background-color: #10b981;"></div>
+      <div class="p-5 flex flex-col flex-1">
+        <span class="text-xs font-semibold mb-2" style="color: #10b981;">Fiscalité</span>
+        <h3 class="font-bold text-gray-900 group-hover:text-blue-700 transition text-sm leading-snug mb-2 flex-1">
+          TVA en France : guide complet pour les entrepreneurs en 2025
+        </h3>
+        <div class="flex items-center justify-between mt-3">
+          <span class="text-xs text-gray-400">8 min</span>
+          <span class="text-xs text-blue-600 group-hover:underline">Lire →</span>
+        </div>
+      </div>
+    </a>
+    
+    <a href="/blog/liasse-fiscale-guide-pme/"
+       class="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition flex flex-col overflow-hidden">
+      <div class="h-1.5 w-full" style="background-color: #f59e0b;"></div>
+      <div class="p-5 flex flex-col flex-1">
+        <span class="text-xs font-semibold mb-2" style="color: #f59e0b;">Comptabilité</span>
+        <h3 class="font-bold text-gray-900 group-hover:text-blue-700 transition text-sm leading-snug mb-2 flex-1">
+          Liasse fiscale : guide complet pour les PME
+        </h3>
+        <div class="flex items-center justify-between mt-3">
+          <span class="text-xs text-gray-400">7 min</span>
+          <span class="text-xs text-blue-600 group-hover:underline">Lire →</span>
+        </div>
+      </div>
+    </a>
+    
+  </div>
+</section>
+
 
 <!-- Derniers cabinets ajoutés -->
 <section class="mb-8">
@@ -913,6 +977,7 @@
         <div>
           <h3 class="font-bold text-gray-900 mb-3">Informations</h3>
           <ul class="text-sm text-gray-500 space-y-1">
+            <li><a href="/blog/" class="hover:text-blue-600">Blog comptabilité</a></li>
             <li><a href="/mentions-legales/" class="hover:text-blue-600">Mentions légales</a></li>
             <li><a href="/contact/" class="hover:text-blue-600">Contact</a></li>
             <li><a href="/sitemap.xml" class="hover:text-blue-600">Sitemap</a></li>

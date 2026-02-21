@@ -125,6 +125,34 @@
   </div>
 </section>
 
+<!-- Section Blog -->
+{% if blog_posts %}
+<section class="mb-12">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-bold text-gray-900">Blog Comptabilité</h2>
+    <a href="/blog/" class="text-sm text-blue-600 hover:underline font-medium">Voir tous les articles →</a>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    {% for post in blog_posts %}
+    <a href="/blog/{{ post.slug }}/"
+       class="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition flex flex-col overflow-hidden">
+      <div class="h-1.5 w-full" style="background-color: {{ post.color }};"></div>
+      <div class="p-5 flex flex-col flex-1">
+        <span class="text-xs font-semibold mb-2" style="color: {{ post.color }};">{{ post.category }}</span>
+        <h3 class="font-bold text-gray-900 group-hover:text-blue-700 transition text-sm leading-snug mb-2 flex-1">
+          {{ post.title }}
+        </h3>
+        <div class="flex items-center justify-between mt-3">
+          <span class="text-xs text-gray-400">{{ post.reading_time }} min</span>
+          <span class="text-xs text-blue-600 group-hover:underline">Lire →</span>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 <!-- Derniers cabinets ajoutés -->
 <section class="mb-8">
   <h2 class="text-2xl font-bold text-gray-900 mb-6">Cabinets récemment référencés</h2>

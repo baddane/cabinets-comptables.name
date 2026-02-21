@@ -37,4 +37,22 @@
   </url>
   {% endfor %}
 
+  <!-- Blog -->
+  {% if blog_posts %}
+  <url>
+    <loc>https://cabinets-comptables.name/blog/</loc>
+    <lastmod>{{ lastmod }}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  {% for post in blog_posts %}
+  <url>
+    <loc>https://cabinets-comptables.name/blog/{{ post.slug }}/</loc>
+    <lastmod>{{ post.date }}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+  {% endfor %}
+  {% endif %}
+
 </urlset>

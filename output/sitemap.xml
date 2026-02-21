@@ -5357,4 +5357,50 @@
   </url>
   
 
+  <!-- Blog -->
+  
+  <url>
+    <loc>https://cabinets-comptables.name/blog/</loc>
+    <lastmod>2026-02-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://cabinets-comptables.name/blog/comment-choisir-son-expert-comptable/</loc>
+    <lastmod>2025-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+  
+  <url>
+    <loc>https://cabinets-comptables.name/blog/tva-guide-complet-entrepreneur/</loc>
+    <lastmod>2025-01-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+  
+  <url>
+    <loc>https://cabinets-comptables.name/blog/liasse-fiscale-guide-pme/</loc>
+    <lastmod>2025-02-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+  
+  <url>
+    <loc>https://cabinets-comptables.name/blog/comptabilite-sas-obligations/</loc>
+    <lastmod>2025-02-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+  
+  <url>
+    <loc>https://cabinets-comptables.name/blog/erreurs-comptables-independants/</loc>
+    <lastmod>2025-02-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+  
+  
+
 </urlset>
