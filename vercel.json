@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/admin/:path*",
-      "destination": "https://REMPLACER-PAR-VOTRE-URL-RAILWAY.up.railway.app/admin/:path*"
+      "destination": "https://cabinets-comptablesname-production.up.railway.app/admin/:path*"
     }
   ],
 
