@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Politique de confidentialité — Cabinets-Comptables.name{% endblock %}
+{% block description %}Politique de confidentialité et gestion des cookies de Cabinets-Comptables.name. Informations sur la collecte de données, vos droits RGPD et comment exercer vos droits.{% endblock %}
+{% block canonical %}/politique-de-confidentialite/{% endblock %}
+{% block og_title %}Politique de confidentialité — Cabinets-Comptables.name{% endblock %}
+{% block og_description %}Politique de confidentialité, cookies et droits RGPD de Cabinets-Comptables.name.{% endblock %}
+{% block og_url %}/politique-de-confidentialite/{% endblock %}
+
+{% block content %}
+
+<nav class="text-sm text-gray-500 mb-6 flex items-center gap-1" aria-label="Fil d'Ariane">
+  <a href="/" class="hover:text-blue-600">Accueil</a>
+  <span class="text-gray-400">›</span>
+  <span class="text-gray-700 font-medium">Politique de confidentialité</span>
+</nav>
+
+<div class="max-w-3xl">
+
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Politique de confidentialité</h1>
+    <p class="text-sm text-gray-400">Dernière mise à jour : {{ lastmod }}</p>
+  </header>
+
+  <div class="bg-blue-50 border border-blue-100 rounded-xl p-5 mb-8 text-sm text-blue-800 leading-relaxed">
+    <strong>Résumé :</strong> Cabinets-Comptables.name est un annuaire gratuit. Nous ne collectons aucune
+    donnée personnelle d'identification sans votre consentement explicite. Des cookies analytiques et publicitaires
+    peuvent être déposés uniquement si vous y consentez via notre bandeau de cookies.
+    <button onclick="openCookiePreferences()" class="ml-2 underline font-semibold hover:text-blue-600 transition">
+      Gérer mes préférences →
+    </button>
+  </div>
+
+  <div class="space-y-8 text-sm text-gray-600 leading-relaxed">
+
+    <!-- 1. Responsable -->
+    <section>
+      <h2 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+        <span class="bg-blue-100 text-blue-700 rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
+        Responsable du traitement
+      </h2>
+      <div class="bg-white rounded-xl border border-gray-100 p-5">
+        <p>Le responsable du traitement des données à caractère personnel est :</p>
+        <ul class="mt-3 space-y-1">
+          <li><strong>Site :</strong> Cabinets-Comptables.name</li>
+          <li><strong>Contact :</strong> <a href="mailto:contact@cabinets-comptables.name" class="text-blue-600 hover:underline">contact@cabinets-comptables.name</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 2. Données collectées -->
+    <section>
+      <h2 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+        <span class="bg-blue-100 text-blue-700 rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
+        Données collectées et finalités
+      </h2>
+      <div class="bg-white rounded-xl border border-gray-100 p-5 space-y-5">
+
+        <div>
+          <h3 class="font-semibold text-gray-800 mb-1">2.1 Données des cabinets référencés</h3>
+          <p>
+            Les informations affichées dans cet annuaire (dénomination, adresse, téléphone, site web)
+            sont des <strong>données professionnelles à caractère public</strong> issues de sources officielles
+            (Registre du Commerce et des Sociétés, annuaires publics, sites web des cabinets).
+            Elles sont traitées sur la base de l'<strong>intérêt légitime</strong> à fournir un service
+            d'information au public (art. 6-1-f RGPD).
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-semibold text-gray-800 mb-1">2.2 Données de navigation (Analytics)</h3>
+          <p>
+            Uniquement avec votre consentement préalable, nous pouvons collecter des données de navigation
+            anonymisées (pages visitées, durée de session, origine géographique approximative).
+            Base légale : <strong>consentement</strong> (art. 6-1-a RGPD).
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-semibold text-gray-800 mb-1">2.3 Formulaire de contact</h3>
+          <p>
+            Le formulaire de contact vous dirige vers votre client e-mail local. Nous ne stockons aucune
+            donnée saisie dans ce formulaire sur nos serveurs. Seul le destinataire e-mail
+            (<a href="mailto:contact@cabinets-comptables.name" class="text-blue-600 hover:underline">contact@cabinets-comptables.name</a>)
+            reçoit votre message. Base légale : <strong>intérêt légitime</strong>.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-semibold text-gray-800 mb-1">2.4 Publicité</h3>
+          <p>
+            Uniquement avec votre consentement, des partenaires publicitaires (Google AdSense) peuvent
+            déposer des cookies pour diffuser des annonces personnalisées. Sans consentement,
+            aucune publicité personnalisée n'est affichée. Base légale : <strong>consentement</strong>.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 3. Cookies -->
+    <section>
+      <h2 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+        <span class="bg-blue-100 text-blue-700 rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
+        Cookies et traceurs
+      </h2>
+      <div class="bg-white rounded-xl border border-gray-100 p-5">
+        <p class="mb-4">
+          Conformément aux recommandations de la <strong>CNIL</strong>, nous distinguons trois catégories de cookies :
+        </p>
+
+        <!-- Tableau cookies -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs border-collapse">
+            <thead>
+              <tr class="bg-gray-50">
+                <th class="text-left p-3 font-semibold text-gray-700 border border-gray-200">Catégorie</th>
+                <th class="text-left p-3 font-semibold text-gray-700 border border-gray-200">Finalité</th>
+                <th class="text-left p-3 font-semibold text-gray-700 border border-gray-200">Conservation</th>
+                <th class="text-left p-3 font-semibold text-gray-700 border border-gray-200">Consentement</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="hover:bg-gray-50">
+                <td class="p-3 border border-gray-200 font-medium text-gray-800">Strictement nécessaires</td>
+                <td class="p-3 border border-gray-200">Mémorisation de vos préférences de cookies (localStorage : <code>ccn_consent</code>)</td>
+                <td class="p-3 border border-gray-200">6 mois</td>
+                <td class="p-3 border border-gray-200">
+                  <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Non requis</span>
+                </td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="p-3 border border-gray-200 font-medium text-gray-800">Analytiques</td>
+                <td class="p-3 border border-gray-200">Mesure d'audience anonymisée (pages vues, sources de trafic)</td>
+                <td class="p-3 border border-gray-200">13 mois max.</td>
+                <td class="p-3 border border-gray-200">
+                  <span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">Requis</span>
+                </td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="p-3 border border-gray-200 font-medium text-gray-800">Publicitaires</td>
+                <td class="p-3 border border-gray-200">Affichage d'annonces personnalisées (Google AdSense)</td>
+                <td class="p-3 border border-gray-200">13 mois max.</td>
+                <td class="p-3 border border-gray-200">
+                  <span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">Requis</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="mt-4 text-gray-500">
+          Vous pouvez modifier vos préférences à tout moment en cliquant sur
+          <button onclick="openCookiePreferences()" class="text-blue-600 underline font-medium hover:text-blue-700 transition">
+            Gérer mes cookies
+          </button>.
+          Votre choix est stocké dans le <code>localStorage</code> de votre navigateur (pas de cookie déposé pour le consentement lui-même).
+        </p>
+      </div>
+    </section>
+
+    <!-- 4. Destinataires -->
+    <section>
+      <h2 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+        <span class="bg-blue-100 text-blue-700 rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
+        Destinataires des données
+      </h2>
+      <div class="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
+        <p>
+          <strong>Hébergeur :</strong> Vercel Inc. (San Francisco, CA, USA). Les fichiers du site étant statiques,
+          Vercel ne traite que les logs de serveur (IP, horodatage, URL). Ces logs sont conservés 30 jours.
+          Vercel est certifié conforme au cadre transatlantique EU-US Data Privacy Framework.
+        </p>
+        <p>
+          <strong>Analytics (avec consentement) :</strong> Google LLC — données transmises via Google Analytics.
+          Traitement encadré par des clauses contractuelles types (CCT) approuvées par la Commission européenne.
+        </p>
+        <p>
+          <strong>Publicité (avec consentement) :</strong> Google LLC — via Google AdSense. Même encadrement juridique.
+        </p>
+        <p>
+          Aucune donnée n'est vendue ou cédée à des tiers à des fins commerciales.
+        </p>
+      </div>
+    </section>
+
+    <!-- 5. Droits -->
+    <section>
+      <h2 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+        <span class="bg-blue-100 text-blue-700 rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold flex-shrink-0">5</span>
+        Vos droits (RGPD)
+      </h2>
+      <div class="bg-white rounded-xl border border-gray-100 p-5">
+        <p class="mb-4">Conformément au Règlement (UE) 2016/679 (RGPD) et à la loi Informatique et Libertés,
+        vous disposez des droits suivants :</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="bg-gray-50 rounded-lg p-3">
+            <strong class="text-gray-800 text-xs block mb-1">Droit d'accès (art. 15)</strong>
+            <p class="text-xs text-gray-500">Obtenir confirmation du traitement et copie des données vous concernant.</p>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <strong class="text-gray-800 text-xs block mb-1">Droit de rectification (art. 16)</strong>
+            <p class="text-xs text-gray-500">Corriger les données inexactes ou incomplètes.</p>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <strong class="text-gray-800 text-xs block mb-1">Droit à l'effacement (art. 17)</strong>
+            <p class="text-xs text-gray-500">Demander la suppression de vos données dans les cas prévus par la loi.</p>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <strong class="text-gray-800 text-xs block mb-1">Droit d'opposition (art. 21)</strong>
+            <p class="text-xs text-gray-500">Vous opposer au traitement fondé sur l'intérêt légitime.</p>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <strong class="text-gray-800 text-xs block mb-1">Droit à la limitation (art. 18)</strong>
+            <p class="text-xs text-gray-500">Demander la suspension temporaire du traitement.</p>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <strong class="text-gray-800 text-xs block mb-1">Retrait du consentement</strong>
+            <p class="text-xs text-gray-500">Retirer votre consentement aux cookies à tout moment, sans effet rétroactif.</p>
+          </div>
+        </div>
+        <p class="mt-4">
+          Pour exercer ces droits, contactez-nous à :
+          <a href="mailto:contact@cabinets-comptables.name" class="text-blue-600 hover:underline">contact@cabinets-comptables.name</a>.
+          Nous répondons dans un délai d'<strong>un mois</strong> (délai légal RGPD).
+        </p>
+      </div>
+    </section>
+
+    <!-- 6. CNIL -->
+    <section>
+      <h2 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+        <span class="bg-blue-100 text-blue-700 rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold flex-shrink-0">6</span>
+        Réclamation auprès de la CNIL
+      </h2>
+      <div class="bg-white rounded-xl border border-gray-100 p-5">
+        <p>
+          Si vous estimez que le traitement de vos données n'est pas conforme à la réglementation,
+          vous pouvez introduire une réclamation auprès de la
+          <strong>Commission Nationale de l'Informatique et des Libertés (CNIL)</strong> :
+        </p>
+        <ul class="mt-3 space-y-1">
+          <li><strong>Site :</strong> <a href="https://www.cnil.fr" class="text-blue-600 hover:underline" target="_blank" rel="noopener">www.cnil.fr</a></li>
+          <li><strong>Adresse :</strong> 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07</li>
+          <li><strong>Téléphone :</strong> 01 53 73 22 22</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 7. Mise à jour -->
+    <section>
+      <h2 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+        <span class="bg-blue-100 text-blue-700 rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold flex-shrink-0">7</span>
+        Mise à jour de cette politique
+      </h2>
+      <div class="bg-white rounded-xl border border-gray-100 p-5">
+        <p>
+          Cette politique de confidentialité peut être mise à jour pour refléter des évolutions légales
+          ou de nos pratiques. La date de dernière mise à jour figure en haut de ce document.
+          En cas de modification substantielle, un avis sera affiché sur le site.
+        </p>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- CTA retour + gérer cookies -->
+  <div class="mt-10 flex flex-col sm:flex-row gap-3">
+    <a href="/"
+       class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 transition">
+      ← Retour à l'accueil
+    </a>
+    <button onclick="openCookiePreferences()"
+            class="sm:ml-auto inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:bg-blue-700 transition">
+      Gérer mes préférences cookies
+    </button>
+  </div>
+
+</div>
+
+{% endblock %}

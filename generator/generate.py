@@ -462,6 +462,13 @@ def load_blog_posts() -> list[dict]:
     return posts
 
 
+def generate_politique_de_confidentialite(env: Environment) -> None:
+    tpl = env.get_template("politique-de-confidentialite.html")
+    html = tpl.render(lastmod=date.today().strftime("%-d %B %Y"))
+    write_file(OUTPUT_DIR / "politique-de-confidentialite" / "index.html", html)
+    log.info("  ✅ Politique de confidentialité générée")
+
+
 def generate_blog(env: Environment, posts: list[dict], total_cabinets: int) -> None:
     if not posts:
         return
@@ -517,6 +524,7 @@ def main():
     generate_404(env)
     generate_mentions_legales()
     generate_contact()
+    generate_politique_de_confidentialite(env)
     generate_blog(env, blog_posts, len(data))
     copy_static_assets()
 

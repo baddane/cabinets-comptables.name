@@ -2021,14 +2021,22 @@
           <ul class="text-sm text-gray-500 space-y-1">
             <li><a href="/blog/" class="hover:text-blue-600">Blog comptabilité</a></li>
             <li><a href="/mentions-legales/" class="hover:text-blue-600">Mentions légales</a></li>
+            <li><a href="/politique-de-confidentialite/" class="hover:text-blue-600">Politique de confidentialité</a></li>
             <li><a href="/contact/" class="hover:text-blue-600">Contact</a></li>
             <li><a href="/sitemap.xml" class="hover:text-blue-600">Sitemap</a></li>
           </ul>
         </div>
       </div>
-      <div class="mt-8 pt-6 border-t border-gray-100 text-xs text-gray-400 text-center">
-        © 2025 Cabinets-Comptables.name — Annuaire non officiel à titre informatif.
-        Les données proviennent de sources publiques.
+      <div class="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p class="text-xs text-gray-400">
+          © 2025 Cabinets-Comptables.name — Annuaire non officiel à titre informatif.
+          Les données proviennent de sources publiques.
+        </p>
+        <button onclick="openCookiePreferences()"
+                class="text-xs text-gray-400 hover:text-blue-600 transition underline underline-offset-2 flex-shrink-0"
+                aria-label="Gérer mes préférences cookies">
+          Gérer les cookies
+        </button>
       </div>
     </div>
   </footer>
@@ -2051,6 +2059,9 @@
       });
     })();
   </script>
+
+  <!-- Gestionnaire de consentement cookies (RGPD / CNIL) -->
+  <script src="/cc.js" defer></script>
 
 </body>
 </html>

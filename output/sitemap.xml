@@ -5357,6 +5357,26 @@
   </url>
   
 
+  <!-- Pages légales -->
+  <url>
+    <loc>https://cabinets-comptables.name/mentions-legales/</loc>
+    <lastmod>2026-02-21</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://cabinets-comptables.name/politique-de-confidentialite/</loc>
+    <lastmod>2026-02-21</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://cabinets-comptables.name/contact/</loc>
+    <lastmod>2026-02-21</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
   <!-- Blog -->
   
   <url>
