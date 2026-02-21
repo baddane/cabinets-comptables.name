@@ -10,7 +10,7 @@
 {% block content %}
 
 <!-- Breadcrumb -->
-<nav class="breadcrumb flex items-center flex-wrap text-sm text-gray-500 mb-6 gap-0">
+<nav class="breadcrumb flex flex-wrap items-center text-sm text-gray-500 mb-6 gap-y-1">
   <a href="/" class="hover:text-blue-600">Accueil</a>
   <a href="/villes/" class="hover:text-blue-600">Cabinets Comptables</a>
   <a href="/villes/{{ city_slug }}/" class="hover:text-blue-600">{{ cabinet.city }}</a>
@@ -216,6 +216,26 @@
 
   </aside>
 </div>
+
+<!-- Mobile sticky CTA bar (phone / website) — visible only on small screens -->
+{% if cabinet.phone or cabinet.website %}
+<div class="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-gray-200 bg-white shadow-lg px-4 py-3 flex gap-3">
+  {% if cabinet.phone %}
+  <a href="tel:{{ cabinet.phone | replace(' ', '') }}"
+     class="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold rounded-xl py-3 text-sm hover:bg-blue-700 transition active:scale-95">
+    📞 {{ cabinet.phone }}
+  </a>
+  {% endif %}
+  {% if cabinet.website %}
+  <a href="{{ cabinet.website }}" target="_blank" rel="nofollow noopener"
+     class="flex items-center justify-center gap-1 border border-gray-300 text-gray-700 font-medium rounded-xl px-4 py-3 text-sm hover:bg-gray-50 transition active:scale-95">
+    🌐 Site
+  </a>
+  {% endif %}
+</div>
+<!-- Spacer so content isn't hidden behind sticky bar -->
+<div class="md:hidden h-20"></div>
+{% endif %}
 
 <!-- Schema.org LocalBusiness JSON-LD -->
 <script type="application/ld+json">

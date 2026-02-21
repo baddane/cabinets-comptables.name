@@ -7,6 +7,7 @@
   <meta name="description" content="Richard Compta Services, cabinet comptable à Angers (49004). Adresse : 88 place Voltaire. Tél : 09 49 39 64 30. Expertise comptable, bilan, liasse fiscale.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://cabinets-comptables.name/cabinets/richard-compta-services-angers/">
+  <meta name="theme-color" content="#162d4a">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
@@ -49,10 +50,35 @@
           <span class="text-blue-300 text-xs">.name — Annuaire national</span>
         </div>
       </a>
+
+      <!-- Desktop nav -->
       <nav class="hidden md:flex items-center gap-6 text-sm">
         <a href="/" class="text-blue-200 hover:text-white transition">Accueil</a>
         <a href="/villes/" class="text-blue-200 hover:text-white transition">Villes</a>
         <a href="/contact/" class="text-blue-200 hover:text-white transition">Contact</a>
+      </nav>
+
+      <!-- Mobile hamburger button -->
+      <button id="mobile-menu-btn"
+              class="md:hidden text-white p-2 rounded-lg hover:bg-blue-800 transition"
+              aria-label="Ouvrir le menu"
+              aria-expanded="false"
+              aria-controls="mobile-menu">
+        <svg id="icon-open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+        <svg id="icon-close" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mobile menu panel -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-blue-900" style="background-color:#0f1f33;">
+      <nav class="max-w-6xl mx-auto px-4 py-3 flex flex-col">
+        <a href="/" class="text-blue-200 hover:text-white hover:bg-blue-800 transition rounded-lg px-3 py-3 text-sm font-medium">Accueil</a>
+        <a href="/villes/" class="text-blue-200 hover:text-white hover:bg-blue-800 transition rounded-lg px-3 py-3 text-sm font-medium">Toutes les villes</a>
+        <a href="/contact/" class="text-blue-200 hover:text-white hover:bg-blue-800 transition rounded-lg px-3 py-3 text-sm font-medium">Contact</a>
       </nav>
     </div>
   </header>
@@ -63,7 +89,7 @@
     
 
 <!-- Breadcrumb -->
-<nav class="breadcrumb flex items-center flex-wrap text-sm text-gray-500 mb-6 gap-0">
+<nav class="breadcrumb flex flex-wrap items-center text-sm text-gray-500 mb-6 gap-y-1">
   <a href="/" class="hover:text-blue-600">Accueil</a>
   <a href="/villes/" class="hover:text-blue-600">Cabinets Comptables</a>
   <a href="/villes/angers/" class="hover:text-blue-600">Angers</a>
@@ -288,6 +314,26 @@
   </aside>
 </div>
 
+<!-- Mobile sticky CTA bar (phone / website) — visible only on small screens -->
+
+<div class="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-gray-200 bg-white shadow-lg px-4 py-3 flex gap-3">
+  
+  <a href="tel:0949396430"
+     class="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold rounded-xl py-3 text-sm hover:bg-blue-700 transition active:scale-95">
+    📞 09 49 39 64 30
+  </a>
+  
+  
+  <a href="https://www.cabinet-richard.fr" target="_blank" rel="nofollow noopener"
+     class="flex items-center justify-center gap-1 border border-gray-300 text-gray-700 font-medium rounded-xl px-4 py-3 text-sm hover:bg-gray-50 transition active:scale-95">
+    🌐 Site
+  </a>
+  
+</div>
+<!-- Spacer so content isn't hidden behind sticky bar -->
+<div class="md:hidden h-20"></div>
+
+
 <!-- Schema.org LocalBusiness JSON-LD -->
 <script type="application/ld+json">
 {
@@ -377,6 +423,23 @@
   </footer>
 
   <!-- ADSENSE_SLOT_FOOTER -->
+
+  <!-- Mobile menu toggle script -->
+  <script>
+    (function () {
+      var btn  = document.getElementById('mobile-menu-btn');
+      var menu = document.getElementById('mobile-menu');
+      var iconOpen  = document.getElementById('icon-open');
+      var iconClose = document.getElementById('icon-close');
+      btn.addEventListener('click', function () {
+        var isOpen = !menu.classList.contains('hidden');
+        menu.classList.toggle('hidden', isOpen);
+        iconOpen.classList.toggle('hidden', !isOpen);
+        iconClose.classList.toggle('hidden', isOpen);
+        btn.setAttribute('aria-expanded', String(!isOpen));
+      });
+    })();
+  </script>
 
 </body>
 </html>
