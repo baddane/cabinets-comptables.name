@@ -42,9 +42,12 @@ from slugify import slugify
 ROOT        = Path(__file__).parent.parent
 ADMIN_DIR   = ROOT / "admin"
 DATA_FILE   = ROOT / "data" / "cabinets.json"
+BLOG_FILE   = ROOT / "data" / "blog_posts.json"
 LOGS_DIR    = ADMIN_DIR / "logs"
 CREDS_FILE  = ADMIN_DIR / ".credentials"   # non versionné
 LOGS_DIR.mkdir(exist_ok=True)
+
+BLOG_CATEGORIES = ["Conseils", "Fiscalité", "Comptabilité", "Statuts & Juridique"]
 
 # ─── Config auth ──────────────────────────────────────────────────────────────
 
@@ -71,6 +74,7 @@ SECRET_KEY        = os.environ.get("ADMIN_SECRET_KEY") or secrets.token_hex(32)
 ADMIN_USERNAME    = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASS_HASH   = os.environ.get("ADMIN_PASSWORD_HASH", "")
 GOOGLE_API_KEY    = os.environ.get("GOOGLE_PLACES_API_KEY", "")
+ANTHROPIC_KEY     = os.environ.get("ANTHROPIC_API_KEY", "")
 # Si ADMIN_PASSWORD est défini (Railway), on le hashe au démarrage
 _initial_pw = os.environ.get("ADMIN_PASSWORD", "")
 
@@ -547,6 +551,155 @@ async def password_change(
     return templates.TemplateResponse("password.html", {
         "request": request, "user": user, "success": True, "error": "",
     })
+
+
+# ─── Blog — données ───────────────────────────────────────────────────────────
+
+def load_blog() -> list[dict]:
+    if BLOG_FILE.exists():
+        with open(BLOG_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+
+def save_blog(posts: list[dict]) -> None:
+    with open(BLOG_FILE, "w", encoding="utf-8") as f:
+        json.dump(posts, f, ensure_ascii=False, indent=2)
+
+
+# ─── Blog — routes ────────────────────────────────────────────────────────────
+
+@app.get("/admin/blog", response_class=HTMLResponse)
+async def blog_list(request: Request, user: str = Depends(_require_auth)):
+    posts = load_blog()
+    return templates.TemplateResponse("blog.html", {
+        "request": request, "user": user,
+        "posts": posts,
+        "categories": BLOG_CATEGORIES,
+        "api_key_ok": bool(ANTHROPIC_KEY),
+    })
+
+
+@app.post("/admin/blog/generate")
+async def blog_generate(
+    request: Request,
+    user: str = Depends(_require_auth),
+    topic: str    = Form(""),
+    category: str = Form("Conseils"),
+    word_count: str = Form("700"),
+):
+    if not ANTHROPIC_KEY:
+        return JSONResponse(
+            {"error": "Clé API Anthropic manquante. Définissez ANTHROPIC_API_KEY dans Railway."},
+            status_code=400,
+        )
+    topic = topic.strip()
+    if not topic:
+        return JSONResponse({"error": "Veuillez saisir un sujet."}, status_code=400)
+
+    prompt = (
+        f"Génère un article de blog professionnel en français pour un site annuaire de cabinets comptables.\n\n"
+        f"Sujet : {topic}\n"
+        f"Catégorie : {category}\n"
+        f"Longueur cible : environ {word_count} mots\n\n"
+        "Consignes strictes :\n"
+        "- Le contenu est en HTML avec UNIQUEMENT ces balises : <p>, <h2>, <ul>, <li>, <strong>, <a>\n"
+        "- 3 à 5 sections titrées avec <h2> (pas de <h1>, pas de <h3>)\n"
+        "- Termes techniques importants en <strong>\n"
+        "- Terminer par un appel à l'action avec ce lien exact : "
+        '<a href="/">l\'annuaire des cabinets comptables</a>\n'
+        "- Ton professionnel, pratique, orienté entrepreneurs et PME français\n"
+        "- Pas de balise <html>, <head>, <body> ni de doctype\n\n"
+        "Retourne UNIQUEMENT un objet JSON valide (sans markdown, sans bloc de code) avec cette structure :\n"
+        '{\n'
+        '  "title": "Titre accrocheur (60-70 caractères max)",\n'
+        '  "slug": "titre-en-kebab-case-sans-accents",\n'
+        '  "description": "Meta description de 150-160 caractères",\n'
+        '  "reading_time": 7,\n'
+        '  "content": "<p>...</p><h2>...</h2>..."\n'
+        "}"
+    )
+
+    try:
+        from anthropic import AsyncAnthropic
+        client = AsyncAnthropic(api_key=ANTHROPIC_KEY)
+        message = await client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = message.content[0].text.strip()
+        # Nettoyer si entouré de ```json ... ```
+        if raw.startswith("```"):
+            parts = raw.split("```")
+            raw = parts[1] if len(parts) > 1 else raw
+            if raw.startswith("json"):
+                raw = raw[4:]
+        raw = raw.strip()
+        article = json.loads(raw)
+        for field in ("title", "slug", "description", "content"):
+            if field not in article:
+                raise ValueError(f"Champ manquant dans la réponse : {field}")
+        article["category"]     = category
+        article["date"]         = datetime.now().strftime("%Y-%m-%d")
+        article["reading_time"] = int(article.get("reading_time") or
+                                      max(1, len(article["content"].split()) // 200))
+        return JSONResponse(article)
+    except json.JSONDecodeError as exc:
+        return JSONResponse({"error": f"Réponse IA mal formée (JSON invalide) : {exc}"}, status_code=500)
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/admin/blog/publish")
+async def blog_publish(
+    request: Request,
+    user: str         = Depends(_require_auth),
+    title: str        = Form(""),
+    slug: str         = Form(""),
+    description: str  = Form(""),
+    category: str     = Form("Conseils"),
+    reading_time: str = Form("5"),
+    date: str         = Form(""),
+    content: str      = Form(""),
+):
+    title = title.strip()
+    slug  = slugify(slug.strip()) if slug.strip() else slugify(title)
+    if not title or not content:
+        return RedirectResponse("/admin/blog?error=missing", 303)
+
+    posts = load_blog()
+    # Éviter les slugs en doublon
+    existing_slugs = {p["slug"] for p in posts}
+    base_slug, counter = slug, 1
+    while slug in existing_slugs:
+        slug = f"{base_slug}-{counter}"
+        counter += 1
+
+    posts.append({
+        "slug":         slug,
+        "title":        title,
+        "description":  description.strip(),
+        "date":         date or datetime.now().strftime("%Y-%m-%d"),
+        "category":     category,
+        "reading_time": max(1, int(reading_time or 5)),
+        "content":      content,
+    })
+    save_blog(posts)
+
+    # Régénérer le site en arrière-plan
+    log_file = LOGS_DIR / "generate.log"
+    asyncio.create_task(_run_script("generate", [sys.executable, "generator/generate.py"], log_file))
+
+    return RedirectResponse(f"/admin/blog?published={slug}", 303)
+
+
+@app.post("/admin/blog/{slug}/delete")
+async def blog_delete(request: Request, slug: str, user: str = Depends(_require_auth)):
+    posts = load_blog()
+    posts = [p for p in posts if p["slug"] != slug]
+    save_blog(posts)
+    return RedirectResponse("/admin/blog?deleted=1", 303)
 
 
 # ─── Import CSV / Excel ───────────────────────────────────────────────────────
