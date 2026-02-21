@@ -17,6 +17,8 @@ Déploiement Railway (public) :
 """
 
 import asyncio
+import csv
+import io
 import json
 import os
 import secrets
@@ -27,8 +29,8 @@ from pathlib import Path
 from typing import Optional
 
 import uvicorn
-from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import hashlib
@@ -544,6 +546,214 @@ async def password_change(
         json.dump({"username": ADMIN_USERNAME, "password_hash": ADMIN_PASS_HASH}, f)
     return templates.TemplateResponse("password.html", {
         "request": request, "user": user, "success": True, "error": "",
+    })
+
+
+# ─── Import CSV / Excel ───────────────────────────────────────────────────────
+
+# Colonnes du fichier modèle : (nom_colonne_fr, champ_interne, description)
+IMPORT_COLUMNS = [
+    ("nom",          "name",          "Nom du cabinet (obligatoire)"),
+    ("adresse",      "address",       "Adresse (numéro + rue)"),
+    ("ville",        "city",          "Ville (obligatoire)"),
+    ("code_postal",  "postal_code",   "Code postal (ex : 75001)"),
+    ("telephone",    "phone",         "Numéro de téléphone"),
+    ("site_web",     "website",       "URL du site web"),
+    ("note",         "rating",        "Note Google (ex : 4.5)"),
+    ("nb_avis",      "reviews_count", "Nombre d'avis Google (entier)"),
+    ("latitude",     "lat",           "Latitude GPS (ex : 48.8566)"),
+    ("longitude",    "lng",           "Longitude GPS (ex : 2.3522)"),
+    ("siren",        "siren",         "Numéro SIREN (9 chiffres)"),
+    ("siret",        "siret",         "Numéro SIRET (14 chiffres)"),
+]
+
+# Mapping flexible nom colonne → champ interne (FR et EN acceptés)
+_COL_MAP: dict[str, str] = {}
+for _fr, _en, _ in IMPORT_COLUMNS:
+    _COL_MAP[_fr.lower()] = _en
+    _COL_MAP[_en.lower()] = _en
+
+_IMPORT_EXAMPLE = [
+    "Cabinet Dupont & Associés", "12 rue de la Paix", "Paris", "75001",
+    "01 23 45 67 89", "https://www.cabinet-dupont.fr", "4.5", "42",
+    "48.8566", "2.3522", "123456789", "12345678900012",
+]
+
+
+def _normalize_import_row(row: dict) -> dict | None:
+    """Mappe les colonnes du fichier vers les champs internes. Retourne None si invalide."""
+    out: dict = {}
+    for key, val in row.items():
+        field = _COL_MAP.get(key.strip().lower().replace(" ", "_"))
+        if field:
+            out[field] = str(val).strip() if val is not None else ""
+    if not out.get("name") or not out.get("city"):
+        return None
+    try:
+        out["reviews_count"] = int(float(out.get("reviews_count") or 0))
+    except (ValueError, TypeError):
+        out["reviews_count"] = 0
+    for f in ("lat", "lng"):
+        v = out.get(f, "")
+        try:
+            out[f] = float(v) if v else ""
+        except (ValueError, TypeError):
+            out[f] = ""
+    return out
+
+
+@app.get("/admin/import", response_class=HTMLResponse)
+async def import_page(request: Request, user: str = Depends(_require_auth)):
+    return templates.TemplateResponse("import.html", {
+        "request": request, "user": user,
+        "columns": IMPORT_COLUMNS, "result": None,
+    })
+
+
+@app.get("/admin/import/template.csv")
+async def import_template_csv(user: str = Depends(_require_auth)):
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow([c[0] for c in IMPORT_COLUMNS])
+    w.writerow(_IMPORT_EXAMPLE)
+    return StreamingResponse(
+        iter([buf.getvalue().encode("utf-8-sig")]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=modele_cabinets.csv"},
+    )
+
+
+@app.get("/admin/import/template.xlsx")
+async def import_template_xlsx(user: str = Depends(_require_auth)):
+    import openpyxl
+    from openpyxl.styles import Alignment, Font, PatternFill
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Cabinets"
+
+    for i, (col_name, _, _desc) in enumerate(IMPORT_COLUMNS, 1):
+        cell = ws.cell(row=1, column=i, value=col_name)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill("solid", fgColor="1D4ED8")
+        cell.alignment = Alignment(horizontal="center")
+        ws.column_dimensions[cell.column_letter].width = max(16, len(col_name) + 4)
+
+    for i, val in enumerate(_IMPORT_EXAMPLE, 1):
+        ws.cell(row=2, column=i, value=val)
+
+    # Onglet description
+    ws2 = wb.create_sheet("Description colonnes")
+    ws2.append(["Colonne", "Description"])
+    ws2["A1"].font = Font(bold=True)
+    ws2["B1"].font = Font(bold=True)
+    for col_name, _, desc in IMPORT_COLUMNS:
+        ws2.append([col_name, desc])
+    ws2.column_dimensions["A"].width = 20
+    ws2.column_dimensions["B"].width = 50
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=modele_cabinets.xlsx"},
+    )
+
+
+@app.post("/admin/import", response_class=HTMLResponse)
+async def import_post(
+    request: Request,
+    user: str = Depends(_require_auth),
+    mode: str = Form("merge"),
+    file: UploadFile = File(...),
+):
+    filename = (file.filename or "").lower()
+    result: dict = {"added": 0, "updated": 0, "skipped": 0, "errors": [], "total": 0}
+    rows: list[dict] = []
+
+    content = await file.read()
+
+    # ── Lecture du fichier ───────────────────────────────────────────────────
+    if filename.endswith(".csv"):
+        for enc in ("utf-8-sig", "utf-8", "latin-1"):
+            try:
+                text = content.decode(enc)
+                rows = list(csv.DictReader(io.StringIO(text)))
+                break
+            except (UnicodeDecodeError, Exception):
+                continue
+        if not rows:
+            result["errors"].append("Impossible de lire le fichier CSV (encodage non reconnu).")
+
+    elif filename.endswith((".xlsx", ".xls")):
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+            ws = wb.active
+            raw_rows = list(ws.iter_rows(values_only=True))
+            if raw_rows:
+                headers = [str(h or "").strip() for h in raw_rows[0]]
+                for row in raw_rows[1:]:
+                    rows.append({headers[i]: (str(v) if v is not None else "") for i, v in enumerate(row)})
+        except Exception as e:
+            result["errors"].append(f"Erreur lecture Excel : {e}")
+    else:
+        result["errors"].append("Format non supporté. Utilisez un fichier .csv ou .xlsx")
+
+    # ── Traitement ───────────────────────────────────────────────────────────
+    if rows:
+        cabinets = load_data() if mode == "merge" else []
+
+        # Index pour fusion rapide
+        idx_siren = {c.get("siren", ""): i for i, c in enumerate(cabinets) if c.get("siren")}
+        idx_name  = {
+            (c.get("name", "").lower(), c.get("city", "").lower()): i
+            for i, c in enumerate(cabinets)
+        }
+
+        for row_num, raw in enumerate(rows, 2):
+            # Ignorer les lignes entièrement vides
+            if all(v in ("", "None", None) for v in raw.values()):
+                continue
+            result["total"] += 1
+
+            cab = _normalize_import_row(raw)
+            if cab is None:
+                result["errors"].append(f"Ligne {row_num} : nom ou ville manquant — ignorée")
+                result["skipped"] += 1
+                continue
+
+            if mode == "merge":
+                existing_idx = None
+                if cab.get("siren") and cab["siren"] in idx_siren:
+                    existing_idx = idx_siren[cab["siren"]]
+                else:
+                    key = (cab["name"].lower(), cab["city"].lower())
+                    existing_idx = idx_name.get(key)
+
+                if existing_idx is not None:
+                    # Mise à jour : on n'écrase que les champs non vides
+                    cabinets[existing_idx].update({k: v for k, v in cab.items() if v != ""})
+                    result["updated"] += 1
+                else:
+                    cabinets.append(cab)
+                    # Mettre à jour les index
+                    new_idx = len(cabinets) - 1
+                    if cab.get("siren"):
+                        idx_siren[cab["siren"]] = new_idx
+                    idx_name[(cab["name"].lower(), cab["city"].lower())] = new_idx
+                    result["added"] += 1
+            else:
+                cabinets.append(cab)
+                result["added"] += 1
+
+        save_data(cabinets)
+
+    return templates.TemplateResponse("import.html", {
+        "request": request, "user": user,
+        "columns": IMPORT_COLUMNS, "result": result,
     })
 
 
