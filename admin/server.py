@@ -77,6 +77,9 @@ ADMIN_USERNAME    = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASS_HASH   = os.environ.get("ADMIN_PASSWORD_HASH", "")
 GOOGLE_API_KEY    = os.environ.get("GOOGLE_PLACES_API_KEY", "")
 ANTHROPIC_KEY     = os.environ.get("ANTHROPIC_API_KEY", "")
+GEMINI_KEY        = os.environ.get("GEMINI_API_KEY", "")
+DEEPSEEK_KEY      = os.environ.get("DEEPSEEK_API_KEY", "")
+OPENAI_KEY        = os.environ.get("OPENAI_API_KEY", "")
 
 # Priorité 1 : ADMIN_PASSWORD en clair dans les env vars Railway
 _plain_pw = os.environ.get("ADMIN_PASSWORD", "").strip()
@@ -626,6 +629,75 @@ def save_blog(posts: list[dict]) -> None:
         json.dump(posts, f, ensure_ascii=False, indent=2)
 
 
+# ─── Blog — helper LLM ────────────────────────────────────────────────────────
+
+LLM_LABELS = {
+    "claude":   "Claude (Anthropic)",
+    "gemini":   "Gemini (Google)",
+    "deepseek": "DeepSeek",
+    "chatgpt":  "ChatGPT (OpenAI)",
+}
+
+
+def _llm_keys_status() -> dict[str, bool]:
+    return {
+        "claude":   bool(ANTHROPIC_KEY),
+        "gemini":   bool(GEMINI_KEY),
+        "deepseek": bool(DEEPSEEK_KEY),
+        "chatgpt":  bool(OPENAI_KEY),
+    }
+
+
+async def _call_llm(llm: str, prompt: str) -> str:
+    """Appelle le LLM sélectionné et retourne le texte brut de la réponse."""
+    if llm == "claude":
+        from anthropic import AsyncAnthropic
+        client = AsyncAnthropic(api_key=ANTHROPIC_KEY)
+        msg = await client.messages.create(
+            model="claude-sonnet-4-6", max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return msg.content[0].text.strip()
+
+    if llm == "gemini":
+        import google.generativeai as genai
+        genai.configure(api_key=GEMINI_KEY)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        resp = await asyncio.to_thread(model.generate_content, prompt)
+        return resp.text.strip()
+
+    if llm == "deepseek":
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=DEEPSEEK_KEY, base_url="https://api.deepseek.com")
+        resp = await client.chat.completions.create(
+            model="deepseek-chat", max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return resp.choices[0].message.content.strip()
+
+    if llm == "chatgpt":
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=OPENAI_KEY)
+        resp = await client.chat.completions.create(
+            model="gpt-4o-mini", max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return resp.choices[0].message.content.strip()
+
+    raise ValueError(f"LLM inconnu : {llm}")
+
+
+def _clean_llm_json(raw: str) -> str:
+    """Retire les blocs ```json ... ``` éventuels."""
+    raw = raw.strip()
+    if raw.startswith("```"):
+        parts = raw.split("```")
+        raw = parts[1] if len(parts) > 1 else raw
+        if raw.startswith("json"):
+            raw = raw[4:]
+    return raw.strip()
+
+
 # ─── Blog — routes ────────────────────────────────────────────────────────────
 
 @app.get("/admin/blog", response_class=HTMLResponse)
@@ -635,26 +707,47 @@ async def blog_list(request: Request, user: str = Depends(_require_auth)):
         "request": request, "user": user,
         "posts": posts,
         "categories": BLOG_CATEGORIES,
-        "api_key_ok": bool(ANTHROPIC_KEY),
+        "api_key_ok": any(_llm_keys_status().values()),
+        "llm_keys": _llm_keys_status(),
+        "llm_labels": LLM_LABELS,
     })
 
 
 @app.post("/admin/blog/generate")
 async def blog_generate(
     request: Request,
-    user: str = Depends(_require_auth),
-    topic: str    = Form(""),
-    category: str = Form("Conseils"),
+    user: str       = Depends(_require_auth),
+    topic: str      = Form(""),
+    category: str   = Form("Conseils"),
     word_count: str = Form("700"),
+    llm: str        = Form("claude"),
 ):
-    if not ANTHROPIC_KEY:
+    llm = llm.strip().lower()
+    keys = _llm_keys_status()
+    if not keys.get(llm):
         return JSONResponse(
-            {"error": "Clé API Anthropic manquante. Définissez ANTHROPIC_API_KEY dans Railway."},
+            {"error": f"Clé API pour {LLM_LABELS.get(llm, llm)} manquante. "
+                      f"Définissez la variable d'environnement correspondante."},
             status_code=400,
         )
     topic = topic.strip()
     if not topic:
         return JSONResponse({"error": "Veuillez saisir un sujet."}, status_code=400)
+
+    # Charger les articles existants pour l'interlinking
+    existing = load_blog()
+    interlink_list = "\n".join(
+        f'- <a href="/blog/{p["slug"]}/">{p["title"]}</a>'
+        for p in existing
+    )
+    interlink_instruction = (
+        "\n\nArticles déjà publiés sur ce site (pour interlinking) :\n"
+        + interlink_list
+        + "\nConsigne interlinking : intégrer naturellement 2 à 3 liens vers ces articles "
+          "pertinents dans le corps du texte, en utilisant exactement le format "
+          '<a href="/blog/SLUG/">Titre de l\'article</a>.'
+        if existing else ""
+    )
 
     prompt = (
         f"Génère un article de blog professionnel en français pour un site annuaire de cabinets comptables.\n\n"
@@ -668,7 +761,8 @@ async def blog_generate(
         "- Terminer par un appel à l'action avec ce lien exact : "
         '<a href="/">l\'annuaire des cabinets comptables</a>\n'
         "- Ton professionnel, pratique, orienté entrepreneurs et PME français\n"
-        "- Pas de balise <html>, <head>, <body> ni de doctype\n\n"
+        "- Pas de balise <html>, <head>, <body> ni de doctype\n"
+        + interlink_instruction + "\n\n"
         "Retourne UNIQUEMENT un objet JSON valide (sans markdown, sans bloc de code) avec cette structure :\n"
         '{\n'
         '  "title": "Titre accrocheur (60-70 caractères max)",\n'
@@ -680,21 +774,8 @@ async def blog_generate(
     )
 
     try:
-        from anthropic import AsyncAnthropic
-        client = AsyncAnthropic(api_key=ANTHROPIC_KEY)
-        message = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=4096,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw = message.content[0].text.strip()
-        # Nettoyer si entouré de ```json ... ```
-        if raw.startswith("```"):
-            parts = raw.split("```")
-            raw = parts[1] if len(parts) > 1 else raw
-            if raw.startswith("json"):
-                raw = raw[4:]
-        raw = raw.strip()
+        raw = await _call_llm(llm, prompt)
+        raw = _clean_llm_json(raw)
         article = json.loads(raw)
         for field in ("title", "slug", "description", "content"):
             if field not in article:
@@ -1010,10 +1091,15 @@ async def import_post(
                 result["added"] += 1
 
         save_data(cabinets)
+        # Régénérer le site automatiquement en arrière-plan
+        log_file = LOGS_DIR / "generate.log"
+        asyncio.create_task(_run_script("generate", [sys.executable, "generator/generate.py"], log_file))
 
+    regen = bool(result and (result["added"] + result["updated"]) > 0)
     return templates.TemplateResponse("import.html", {
         "request": request, "user": user,
         "columns": IMPORT_COLUMNS, "result": result,
+        "regen": regen,
     })
 
 

@@ -47,16 +47,17 @@
       {% endif %}
 
       {% if result.added > 0 or result.updated > 0 %}
-      <div class="mt-4 flex items-center gap-3">
+      <div class="mt-4 flex flex-wrap items-center gap-3">
         <span class="text-sm text-green-700 font-medium">Import réussi !</span>
         <a href="/admin/cabinets"
            class="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 underline">
           Voir les cabinets
         </a>
-        <a href="/admin/outils"
-           class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 underline">
-          Régénérer le site
-        </a>
+        {% if regen %}
+        <span class="inline-flex items-center gap-1.5 text-sm text-violet-700 font-medium animate-pulse">
+          ⚙️ Site en cours de régénération… (~20 s)
+        </span>
+        {% endif %}
       </div>
       {% endif %}
     </div>
