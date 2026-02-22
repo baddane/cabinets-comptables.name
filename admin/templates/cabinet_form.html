@@ -87,9 +87,9 @@
       </div>
     </div>
 
-    <!-- Google / Avis -->
+    <!-- Note & Infos -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">Note Google</h2>
+      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">Note &amp; Catégorie</h2>
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">Note (0–5)</label>
@@ -105,12 +105,33 @@
                  class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                  placeholder="42">
         </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Source de la note</label>
+          <input type="text" name="rating_info"
+                 value="{{ cabinet.get('rating_info', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="Trustpilot (3966)">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Catégorie</label>
+          <input type="text" name="category"
+                 value="{{ cabinet.get('category', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="Comptable">
+        </div>
+        <div class="col-span-2">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Horaires</label>
+          <input type="text" name="open_hours"
+                 value="{{ cabinet.get('open_hours', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="Lun-Ven 09:00-18:00">
+        </div>
       </div>
     </div>
 
-    <!-- GPS + SIRENE -->
+    <!-- GPS & Localisation -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">GPS &amp; Identifiants SIRENE</h2>
+      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">GPS &amp; Localisation</h2>
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">Latitude</label>
@@ -126,20 +147,71 @@
                  class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                  placeholder="2.3522">
         </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">SIREN</label>
-          <input type="text" name="siren" maxlength="9" pattern="[0-9]{9}"
-                 value="{{ cabinet.get('siren', '') }}"
+        <div class="col-span-2">
+          <label class="block text-sm font-medium text-slate-700 mb-1">URL Bing Maps</label>
+          <input type="url" name="bing_maps_url"
+                 value="{{ cabinet.get('bing_maps_url', '') }}"
                  class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="552108722">
+                 placeholder="https://www.bing.com/maps?...">
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact étendu -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">E-mail &amp; Réseaux sociaux</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="block text-sm font-medium text-slate-700 mb-1">E-mail</label>
+          <input type="email" name="email"
+                 value="{{ cabinet.get('email', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="contact@cabinet.fr">
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">SIRET</label>
-          <input type="text" name="siret" maxlength="14" pattern="[0-9]{14}"
-                 value="{{ cabinet.get('siret', '') }}"
+          <label class="block text-sm font-medium text-slate-700 mb-1">Facebook</label>
+          <input type="url" name="facebook"
+                 value="{{ cabinet.get('facebook', '') }}"
                  class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="55210872200038">
+                 placeholder="https://facebook.com/...">
         </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Instagram</label>
+          <input type="url" name="instagram"
+                 value="{{ cabinet.get('instagram', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="https://instagram.com/...">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Twitter / X</label>
+          <input type="url" name="twitter"
+                 value="{{ cabinet.get('twitter', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="https://twitter.com/...">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">ID externe</label>
+          <input type="text" name="external_id"
+                 value="{{ cabinet.get('external_id', '') }}"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 placeholder="ypid:YN9B5A17A55148AD1F">
+        </div>
+      </div>
+    </div>
+
+    <!-- Image -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">Image principale</h2>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">URL de l'image</label>
+        <input type="url" name="featured_image"
+               value="{{ cabinet.get('featured_image', '') }}"
+               class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+               placeholder="https://...">
+        {% if cabinet.get('featured_image') %}
+        <img src="{{ cabinet.featured_image }}" alt="Image du cabinet"
+             class="mt-3 rounded-lg border border-slate-200 max-h-32 object-cover">
+        {% endif %}
       </div>
     </div>
 

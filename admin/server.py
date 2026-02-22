@@ -21,6 +21,7 @@ import csv
 import io
 import json
 import os
+import re
 import secrets
 import shutil
 import sys
@@ -373,18 +374,26 @@ async def cabinet_new(request: Request, user: str = Depends(_require_auth)):
 @app.post("/admin/cabinets/new")
 async def cabinet_create(
     request: Request, user: str = Depends(_require_auth),
-    name: str        = Form(""),
-    address: str     = Form(""),
-    city: str        = Form(""),
-    postal_code: str = Form(""),
-    phone: str       = Form(""),
-    website: str     = Form(""),
-    rating: str      = Form(""),
+    name: str          = Form(""),
+    address: str       = Form(""),
+    city: str          = Form(""),
+    postal_code: str   = Form(""),
+    phone: str         = Form(""),
+    website: str       = Form(""),
+    rating: str        = Form(""),
     reviews_count: str = Form("0"),
-    lat: str         = Form(""),
-    lng: str         = Form(""),
-    siren: str       = Form(""),
-    siret: str       = Form(""),
+    rating_info: str   = Form(""),
+    category: str      = Form(""),
+    open_hours: str    = Form(""),
+    lat: str           = Form(""),
+    lng: str           = Form(""),
+    featured_image: str = Form(""),
+    bing_maps_url: str = Form(""),
+    email: str         = Form(""),
+    facebook: str      = Form(""),
+    instagram: str     = Form(""),
+    twitter: str       = Form(""),
+    external_id: str   = Form(""),
 ):
     name = name.strip()
     city = city.strip()
@@ -400,9 +409,18 @@ async def cabinet_create(
         "phone": phone.strip(), "website": website.strip(),
         "rating": rating.strip(),
         "reviews_count": int(reviews_count or 0),
+        "rating_info": rating_info.strip(),
+        "category": category.strip(),
+        "open_hours": open_hours.strip(),
         "lat": float(lat) if lat.strip() else "",
         "lng": float(lng) if lng.strip() else "",
-        "siren": siren.strip(), "siret": siret.strip(),
+        "featured_image": featured_image.strip(),
+        "bing_maps_url": bing_maps_url.strip(),
+        "email": email.strip(),
+        "facebook": facebook.strip(),
+        "instagram": instagram.strip(),
+        "twitter": twitter.strip(),
+        "external_id": external_id.strip(),
     }
     cabinets = load_data()
     cabinets.append(new_cab)
@@ -424,19 +442,27 @@ async def cabinet_edit(request: Request, idx: int, user: str = Depends(_require_
 @app.post("/admin/cabinets/{idx}/edit")
 async def cabinet_update(
     request: Request, idx: int,
-    user: str        = Depends(_require_auth),
-    name: str        = Form(""),
-    address: str     = Form(""),
-    city: str        = Form(""),
-    postal_code: str = Form(""),
-    phone: str       = Form(""),
-    website: str     = Form(""),
-    rating: str      = Form(""),
+    user: str          = Depends(_require_auth),
+    name: str          = Form(""),
+    address: str       = Form(""),
+    city: str          = Form(""),
+    postal_code: str   = Form(""),
+    phone: str         = Form(""),
+    website: str       = Form(""),
+    rating: str        = Form(""),
     reviews_count: str = Form("0"),
-    lat: str         = Form(""),
-    lng: str         = Form(""),
-    siren: str       = Form(""),
-    siret: str       = Form(""),
+    rating_info: str   = Form(""),
+    category: str      = Form(""),
+    open_hours: str    = Form(""),
+    lat: str           = Form(""),
+    lng: str           = Form(""),
+    featured_image: str = Form(""),
+    bing_maps_url: str = Form(""),
+    email: str         = Form(""),
+    facebook: str      = Form(""),
+    instagram: str     = Form(""),
+    twitter: str       = Form(""),
+    external_id: str   = Form(""),
 ):
     cabinets = load_data()
     if idx < 0 or idx >= len(cabinets):
@@ -454,9 +480,18 @@ async def cabinet_update(
         "phone": phone.strip(), "website": website.strip(),
         "rating": rating.strip(),
         "reviews_count": int(reviews_count or 0),
+        "rating_info": rating_info.strip(),
+        "category": category.strip(),
+        "open_hours": open_hours.strip(),
         "lat": float(lat) if lat.strip() else "",
         "lng": float(lng) if lng.strip() else "",
-        "siren": siren.strip(), "siret": siret.strip(),
+        "featured_image": featured_image.strip(),
+        "bing_maps_url": bing_maps_url.strip(),
+        "email": email.strip(),
+        "facebook": facebook.strip(),
+        "instagram": instagram.strip(),
+        "twitter": twitter.strip(),
+        "external_id": external_id.strip(),
     })
     save_data(cabinets)
     return RedirectResponse("/admin/cabinets?updated=1", 303)
@@ -482,32 +517,6 @@ async def outils_page(request: Request, user: str = Depends(_require_auth)):
         "google_key_ok": bool(GOOGLE_API_KEY),
     })
 
-
-@app.post("/admin/outils/sirene")
-async def launch_sirene(
-    request: Request, user: str = Depends(_require_auth),
-    depts: str = Form(""),
-    max_results: str = Form("5000"),
-):
-    task_id = "sirene"
-    if _is_busy(task_id):
-        return RedirectResponse("/admin/outils?busy=sirene", 303)
-
-    # Validation stricte des arguments
-    safe_max = str(max(100, min(50000, int(max_results or 5000))))
-    cmd = [sys.executable, "scraper/scrape_sirene.py", "--max", safe_max]
-    if depts.strip():
-        # N'autoriser que chiffres, lettres majuscules et virgules
-        safe_depts = ",".join(
-            p.strip() for p in depts.split(",")
-            if p.strip().replace("A", "").replace("B", "").isdigit() or p.strip() in ("2A", "2B")
-        )
-        if safe_depts:
-            cmd += ["--dept", safe_depts]
-
-    log_file = LOGS_DIR / "sirene.log"
-    asyncio.create_task(_run_script(task_id, cmd, log_file))
-    return RedirectResponse("/admin/outils?started=sirene", 303)
 
 
 @app.post("/admin/outils/enrich")
@@ -757,17 +766,25 @@ async def blog_delete(request: Request, slug: str, user: str = Depends(_require_
 # Colonnes du fichier modèle : (nom_colonne_fr, champ_interne, description)
 IMPORT_COLUMNS = [
     ("nom",          "name",          "Nom du cabinet (obligatoire)"),
-    ("adresse",      "address",       "Adresse (numéro + rue)"),
-    ("ville",        "city",          "Ville (obligatoire)"),
+    ("adresse",      "address",       "Adresse complète (rue, code postal, ville)"),
+    ("ville",        "city",          "Ville — extraite automatiquement de l'adresse si absente"),
     ("code_postal",  "postal_code",   "Code postal (ex : 75001)"),
     ("telephone",    "phone",         "Numéro de téléphone"),
     ("site_web",     "website",       "URL du site web"),
-    ("note",         "rating",        "Note Google (ex : 4.5)"),
-    ("nb_avis",      "reviews_count", "Nombre d'avis Google (entier)"),
+    ("note",         "rating",        "Note (ex : 4.5)"),
+    ("nb_avis",      "reviews_count", "Nombre d'avis (entier)"),
+    ("note_info",    "rating_info",   "Source de la note (ex : Trustpilot (3966))"),
+    ("categorie",    "category",      "Catégorie (ex : Comptable)"),
+    ("horaires",     "open_hours",    "Horaires d'ouverture"),
     ("latitude",     "lat",           "Latitude GPS (ex : 48.8566)"),
     ("longitude",    "lng",           "Longitude GPS (ex : 2.3522)"),
-    ("siren",        "siren",         "Numéro SIREN (9 chiffres)"),
-    ("siret",        "siret",         "Numéro SIRET (14 chiffres)"),
+    ("image",        "featured_image","URL de l'image principale"),
+    ("bing_maps",    "bing_maps_url", "URL Bing Maps"),
+    ("email",        "email",         "Adresse e-mail de contact"),
+    ("facebook",     "facebook",      "URL de la page Facebook"),
+    ("instagram",    "instagram",     "URL du profil Instagram"),
+    ("twitter",      "twitter",       "URL du profil Twitter / X"),
+    ("id_externe",   "external_id",   "Identifiant externe (ex : ypid:...)"),
 ]
 
 # Mapping flexible nom colonne → champ interne (FR et EN acceptés)
@@ -776,11 +793,31 @@ for _fr, _en, _ in IMPORT_COLUMNS:
     _COL_MAP[_fr.lower()] = _en
     _COL_MAP[_en.lower()] = _en
 
+# Noms de colonnes anglais supplémentaires (exports Bing Maps / tiers)
+_COL_MAP.update({
+    "id":           "external_id",
+    "emails":       "email",
+    "social_medias":"social_medias",
+})
+
 _IMPORT_EXAMPLE = [
-    "Cabinet Dupont & Associés", "12 rue de la Paix", "Paris", "75001",
+    "Cabinet Dupont & Associés", "12 rue de la Paix, 75001 Paris", "Paris", "75001",
     "01 23 45 67 89", "https://www.cabinet-dupont.fr", "4.5", "42",
-    "48.8566", "2.3522", "123456789", "12345678900012",
+    "Google (42)", "Comptable", "Lun-Ven 09:00-18:00",
+    "48.8566", "2.3522", "", "", "contact@cabinet-dupont.fr",
+    "", "", "", "",
 ]
+
+
+def _extract_city_from_address(address: str) -> tuple[str, str, str]:
+    """Essaie d'extraire (rue, code_postal, ville) depuis une adresse française complète.
+    Ex: '20 Rue d'athènes, 75009 Paris' → ('20 Rue d'athènes', '75009', 'Paris')
+    """
+    m = re.search(r",?\s*(\d{4,5})\s+([^,\d]+?)\s*$", address.strip())
+    if m:
+        street = address[: m.start()].strip().rstrip(",").strip()
+        return street, m.group(1).strip(), m.group(2).strip()
+    return address, "", ""
 
 
 def _normalize_import_row(row: dict) -> dict | None:
@@ -790,12 +827,32 @@ def _normalize_import_row(row: dict) -> dict | None:
         field = _COL_MAP.get(key.strip().lower().replace(" ", "_"))
         if field:
             out[field] = str(val).strip() if val is not None else ""
-    if not out.get("name") or not out.get("city"):
+
+    if not out.get("name"):
         return None
+
+    # Auto-extraction ville / code postal depuis l'adresse si absent
+    if out.get("address") and not out.get("city"):
+        street, postal, city = _extract_city_from_address(out["address"])
+        if city:
+            out["address"] = street
+            if not out.get("postal_code"):
+                out["postal_code"] = postal
+            out["city"] = city
+
+    if not out.get("city"):
+        return None
+
+    # Nombre d'avis : depuis reviews_count ou extrait de rating_info "Trustpilot (3966)"
+    if not out.get("reviews_count") and out.get("rating_info"):
+        m = re.search(r"\((\d+)\)", out["rating_info"])
+        if m:
+            out["reviews_count"] = m.group(1)
     try:
         out["reviews_count"] = int(float(out.get("reviews_count") or 0))
     except (ValueError, TypeError):
         out["reviews_count"] = 0
+
     for f in ("lat", "lng"):
         v = out.get(f, "")
         try:
@@ -910,7 +967,7 @@ async def import_post(
         cabinets = load_data() if mode == "merge" else []
 
         # Index pour fusion rapide
-        idx_siren = {c.get("siren", ""): i for i, c in enumerate(cabinets) if c.get("siren")}
+        idx_extid = {c.get("external_id", ""): i for i, c in enumerate(cabinets) if c.get("external_id")}
         idx_name  = {
             (c.get("name", "").lower(), c.get("city", "").lower()): i
             for i, c in enumerate(cabinets)
@@ -930,8 +987,8 @@ async def import_post(
 
             if mode == "merge":
                 existing_idx = None
-                if cab.get("siren") and cab["siren"] in idx_siren:
-                    existing_idx = idx_siren[cab["siren"]]
+                if cab.get("external_id") and cab["external_id"] in idx_extid:
+                    existing_idx = idx_extid[cab["external_id"]]
                 else:
                     key = (cab["name"].lower(), cab["city"].lower())
                     existing_idx = idx_name.get(key)
@@ -944,8 +1001,8 @@ async def import_post(
                     cabinets.append(cab)
                     # Mettre à jour les index
                     new_idx = len(cabinets) - 1
-                    if cab.get("siren"):
-                        idx_siren[cab["siren"]] = new_idx
+                    if cab.get("external_id"):
+                        idx_extid[cab["external_id"]] = new_idx
                     idx_name[(cab["name"].lower(), cab["city"].lower())] = new_idx
                     result["added"] += 1
             else:

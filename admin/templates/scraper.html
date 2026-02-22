@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% set active = "outils" %}
 
-{% block title %}Import &amp; Outils{% endblock %}
-{% block page_title %}Import &amp; Outils{% endblock %}
+{% block title %}Outils{% endblock %}
+{% block page_title %}Outils{% endblock %}
 
 {% block content %}
 
@@ -64,66 +64,7 @@
 
 <div class="space-y-6">
 
-  <!-- ── 1. Scraper SIRENE ─────────────────────────────────────────────────── -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-      <div>
-        <h2 class="font-semibold text-slate-800">Import SIRENE / INSEE</h2>
-        <p class="text-xs text-slate-500 mt-0.5">
-          Données officielles françaises — open data, gratuit, sans clé API.
-          Code NAF 69.20Z (Activités comptables, établissements actifs).
-        </p>
-      </div>
-      {% if not vercel_mode %}{{ task_badge("sirene") }}{% endif %}
-    </div>
-
-    {% if vercel_mode %}
-    <div class="px-6 py-5">
-      <div class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm text-slate-600">
-        <strong>Non disponible en mode Vercel.</strong>
-        Lancez en local puis commitez — Vercel redéploiera automatiquement :
-        <pre class="mt-2 bg-slate-100 rounded px-3 py-2 text-xs font-mono text-slate-700">python scraper/scrape_sirene.py --max 5000
-git add data/cabinets.json &amp;&amp; git commit -m "data: import SIRENE" &amp;&amp; git push</pre>
-      </div>
-    </div>
-    {% else %}
-    <form method="POST" action="/admin/outils/sirene" class="px-6 py-5">
-      <div class="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">
-            Départements (vide = national)
-          </label>
-          <input type="text" name="depts" placeholder="ex : 75,69,13,33,31"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <p class="text-xs text-slate-400 mt-1">Codes séparés par virgule (2A, 2B acceptés). Vide = tous les départements.</p>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">
-            Nombre max de résultats
-          </label>
-          <input type="number" name="max_results" value="5000" min="100" max="50000"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <p class="text-xs text-slate-400 mt-1">5 000 ≈ 4 min. 50 000 ≈ 40 min.</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-3">
-        <button type="submit"
-                class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-          </svg>
-          Lancer l'import SIRENE
-        </button>
-        <button type="button" onclick="loadLog('sirene')"
-                class="text-sm text-slate-500 hover:text-slate-700 underline">
-          Voir les logs
-        </button>
-      </div>
-    </form>
-    {% endif %}
-  </div>
-
-  <!-- ── 2. Enrichissement Google Places ───────────────────────────────────── -->
+  <!-- ── 1. Enrichissement Google Places ───────────────────────────────────── -->
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
     <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
       <div>
@@ -274,7 +215,6 @@ Chargement…
   let _currentTask = null;
 
   const taskLabels = {
-    sirene: "Logs — Import SIRENE",
     enrich: "Logs — Enrichissement Google Places",
     generate: "Logs — Générateur de site",
   };
