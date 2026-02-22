@@ -1,0 +1,48 @@
+name: Régénérer le site statique
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/cabinets.json"
+      - "data/blog_posts.json"
+
+  # Déclenchement manuel depuis l'onglet Actions de GitHub
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # nécessaire pour pousser output/
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: generator/requirements.txt
+
+      - name: Installer les dépendances du générateur
+        run: pip install -r generator/requirements.txt
+
+      - name: Générer le site statique
+        run: python generator/generate.py
+
+      - name: Commit et push output/
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add output/
+          if git diff --cached --quiet; then
+            echo "Aucune modification dans output/ — rien à committer."
+          else
+            git commit -m "chore: régénération automatique du site [skip ci]"
+            git push
+          fi

@@ -1,0 +1,8 @@
+fastapi==0.115.6
+httpx==0.28.1
+itsdangerous==2.2.0
+jinja2==3.1.5
+openpyxl==3.1.5
+python-multipart==0.0.20
+python-slugify==8.0.4
+anthropic==0.43.0
