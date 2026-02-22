@@ -11,3 +11,7 @@ restartPolicyMaxRetries = 3
 
 [environments.production.variables]
 PORT = "8080"
+# Variables à définir dans Railway Dashboard → Variables :
+# ADMIN_USERNAME        = "admin"      (ou votre login)
+# ADMIN_PASSWORD_HASH   = "..."        (généré via /admin/password)
+# ANTHROPIC_API_KEY     = "sk-ant-..." (pour le générateur blog IA)
