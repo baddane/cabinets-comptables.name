@@ -76,19 +76,23 @@ ADMIN_PASS_HASH   = os.environ.get("ADMIN_PASSWORD_HASH", "")
 GOOGLE_API_KEY    = os.environ.get("GOOGLE_PLACES_API_KEY", "")
 ANTHROPIC_KEY     = os.environ.get("ANTHROPIC_API_KEY", "")
 
-# ADMIN_PASSWORD (texte clair) a priorité absolue — le plus simple à configurer
+# Priorité 1 : ADMIN_PASSWORD en clair dans les env vars Railway
 _plain_pw = os.environ.get("ADMIN_PASSWORD", "").strip()
 if _plain_pw:
+    # Supprimer le fichier .credentials périmé pour éviter les conflits
+    if CREDS_FILE.exists():
+        CREDS_FILE.unlink()
+        print("[auth] .credentials supprimé — ADMIN_PASSWORD (env) prend la main")
     ADMIN_PASS_HASH = _hash_password(_plain_pw)
-    print(f"[auth] Mot de passe chargé depuis ADMIN_PASSWORD (login: {ADMIN_USERNAME})")
+    print(f"[auth] ✅ Mot de passe chargé depuis ADMIN_PASSWORD (login: {ADMIN_USERNAME})")
 
-# Sinon, ADMIN_PASSWORD_HASH doit être au format 'salt$pbkdf2_hex'
-elif ADMIN_PASS_HASH and "$" not in ADMIN_PASS_HASH:
-    print("[auth] ⚠️  ADMIN_PASSWORD_HASH invalide (format attendu: salt$hash). "
-          "Définissez ADMIN_PASSWORD à la place.")
-    ADMIN_PASS_HASH = ""
+# Priorité 2 : ADMIN_PASSWORD_HASH en format 'salt$pbkdf2_hex'
+elif ADMIN_PASS_HASH:
+    if "$" not in ADMIN_PASS_HASH:
+        print("[auth] ⚠️  ADMIN_PASSWORD_HASH format invalide. Définissez ADMIN_PASSWORD.")
+        ADMIN_PASS_HASH = ""
 
-# Dernier recours : fichier .credentials local (ou génération auto)
+# Priorité 3 : fichier .credentials existant
 if not ADMIN_PASS_HASH:
     if CREDS_FILE.exists():
         with open(CREDS_FILE) as f:
@@ -97,6 +101,7 @@ if not ADMIN_PASS_HASH:
         ADMIN_PASS_HASH = _c.get("password_hash", "")
         print(f"[auth] Credentials chargés depuis {CREDS_FILE}")
     else:
+        # Priorité 4 : génération automatique (premier lancement)
         _pw = secrets.token_urlsafe(16)
         ADMIN_PASS_HASH = _hash_password(_pw)
         with open(CREDS_FILE, "w") as f:
@@ -105,8 +110,7 @@ if not ADMIN_PASS_HASH:
         print("  PREMIER LANCEMENT — CREDENTIALS GÉNÉRÉS")
         print(f"  Login    : {ADMIN_USERNAME}")
         print(f"  Password : {_pw}")
-        print(f"  Fichier  : {CREDS_FILE}")
-        print("  ⚠️  Notez ce mot de passe, il ne sera plus affiché.")
+        print("  → Copiez ce mot de passe dans Railway → Variables → ADMIN_PASSWORD")
         print("=" * 60 + "\n")
 
 # ─── Application ──────────────────────────────────────────────────────────────
