@@ -13,6 +13,7 @@ Variables à définir dans Vercel Dashboard → Settings → Environment Variabl
   ANTHROPIC_API_KEY    → clé Anthropic (optionnel, pour génération blog)
 """
 
+import asyncio
 import base64
 import csv
 import hashlib
@@ -67,6 +68,7 @@ def _verify_password(password: str, stored: str) -> bool:
 SECRET_KEY     = os.environ.get("ADMIN_SECRET_KEY") or secrets.token_hex(32)
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ANTHROPIC_KEY  = os.environ.get("ANTHROPIC_API_KEY", "")
+GOOGLE_API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY", "")
 
 _plain_pw = os.environ.get("ADMIN_PASSWORD", "").strip()
 if not _plain_pw:
@@ -171,6 +173,115 @@ async def _github_commit_file(repo_path: str, content_str: str, commit_msg: str)
     except Exception as exc:
         print(f"[github] Erreur commit : {exc}")
         return False
+
+
+async def _github_get_file_content(repo_path: str) -> str | None:
+    """Lit le contenu brut d'un fichier depuis GitHub (toujours à jour, bypass snapshot Vercel)."""
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        return None
+    hdrs = {
+        **_GH_HEADERS,
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.raw+json",
+    }
+    async with httpx.AsyncClient(timeout=30) as gh:
+        r = await gh.get(
+            f"{_GH_API}/repos/{GITHUB_REPO}/contents/{repo_path}",
+            headers=hdrs,
+            params={"ref": GITHUB_BRANCH},
+        )
+        if r.status_code != 200:
+            return None
+        return r.text
+
+
+# ─── Google Places API (enrichissement async) ─────────────────────────────────
+
+_PLACES_BASE = "https://maps.googleapis.com/maps/api/place"
+
+
+def _fmt_phone(raw: str) -> str:
+    if not raw:
+        return ""
+    digits = "".join(c for c in raw if c.isdigit())
+    if len(digits) == 11 and digits.startswith("33"):
+        digits = "0" + digits[2:]
+    if len(digits) == 10 and digits.startswith("0"):
+        return " ".join(digits[i:i+2] for i in range(0, 10, 2))
+    return raw.strip()
+
+
+async def _places_find(client: httpx.AsyncClient, cab: dict) -> str | None:
+    """Cherche un cabinet sur Google Places, retourne son place_id."""
+    params = {
+        "query": f"{cab['name']} {cab['city']} expert comptable",
+        "type": "accounting",
+        "language": "fr",
+        "key": GOOGLE_API_KEY,
+    }
+    if cab.get("lat") and cab.get("lng"):
+        params["location"] = f"{cab['lat']},{cab['lng']}"
+        params["radius"] = "2000"
+    try:
+        r = await client.get(f"{_PLACES_BASE}/textsearch/json", params=params)
+        results = r.json().get("results", [])
+        return results[0].get("place_id") if results else None
+    except Exception:
+        return None
+
+
+async def _places_details(client: httpx.AsyncClient, place_id: str) -> dict:
+    """Récupère les détails d'un établissement Google Places."""
+    params = {
+        "place_id": place_id,
+        "fields": (
+            "formatted_phone_number,international_phone_number,"
+            "website,rating,user_ratings_total,"
+            "geometry/location,business_status"
+        ),
+        "language": "fr",
+        "key": GOOGLE_API_KEY,
+    }
+    try:
+        r = await client.get(f"{_PLACES_BASE}/details/json", params=params)
+        result = r.json().get("result", {})
+        return {} if result.get("business_status") == "CLOSED_PERMANENTLY" else result
+    except Exception:
+        return {}
+
+
+async def _enrich_one(sem: asyncio.Semaphore, client: httpx.AsyncClient, cab: dict) -> bool:
+    """Enrichit un cabinet. Retourne True si au moins un champ a été mis à jour."""
+    async with sem:
+        place_id = await _places_find(client, cab)
+        if not place_id:
+            return False
+        details = await _places_details(client, place_id)
+        if not details:
+            return False
+        phone = _fmt_phone(
+            details.get("formatted_phone_number", "")
+            or details.get("international_phone_number", "")
+        )
+        changed = False
+        if phone:
+            cab["phone"] = phone
+            changed = True
+        if details.get("website"):
+            cab["website"] = details["website"].strip()
+            changed = True
+        if details.get("rating") is not None:
+            cab["rating"] = str(round(float(details["rating"]), 1))
+            changed = True
+        if details.get("user_ratings_total"):
+            cab["reviews_count"] = details["user_ratings_total"]
+            changed = True
+        geo = details.get("geometry", {}).get("location", {})
+        if geo.get("lat") and geo.get("lng"):
+            cab["lat"] = geo["lat"]
+            cab["lng"] = geo["lng"]
+            changed = True
+        return changed
 
 
 # ─── Données ──────────────────────────────────────────────────────────────────
@@ -848,13 +959,65 @@ async def api_stats(request: Request, user: str = Depends(_require_auth)):
     return JSONResponse(data_stats(load_data()))
 
 
-# ─── Outils (info uniquement en mode Vercel) ──────────────────────────────────
+# ─── Outils ───────────────────────────────────────────────────────────────────
 
 @app.get("/admin/outils", response_class=HTMLResponse)
 async def outils_page(request: Request, user: str = Depends(_require_auth)):
     return templates.TemplateResponse("scraper.html", {
         "request": request, "user": user,
         "tasks": {},
-        "google_key_ok": False,
+        "google_key_ok": bool(GOOGLE_API_KEY),
         "vercel_mode": True,
+        "github_ok": bool(GITHUB_TOKEN and GITHUB_REPO),
     })
+
+
+@app.post("/admin/outils/enrich")
+async def outils_enrich(
+    request: Request,
+    user: str  = Depends(_require_auth),
+    limit: str = Form("50"),
+    cities: str = Form(""),
+):
+    if not GOOGLE_API_KEY:
+        return RedirectResponse("/admin/outils?error=no_key", 303)
+
+    # Lire depuis GitHub pour avoir la version la plus récente (pas le snapshot du déploiement)
+    raw = await _github_get_file_content("data/cabinets.json")
+    cabinets = json.loads(raw) if raw else load_data()
+
+    city_filter = [c.strip() for c in cities.split(",") if c.strip()] if cities.strip() else None
+    safe_limit  = max(1, min(100, int(limit or 50)))
+
+    def needs_enrichment(c: dict) -> bool:
+        if c.get("phone") and c.get("rating"):
+            return False
+        if city_filter and c.get("city") not in city_filter:
+            return False
+        return True
+
+    all_candidates   = [i for i, c in enumerate(cabinets) if needs_enrichment(c)]
+    batch_idx        = all_candidates[:safe_limit]
+    total_remaining  = len(all_candidates)
+
+    enriched = 0
+    sem = asyncio.Semaphore(5)
+    async with httpx.AsyncClient(timeout=15) as client:
+        results = await asyncio.gather(
+            *[_enrich_one(sem, client, cabinets[i]) for i in batch_idx],
+            return_exceptions=True,
+        )
+        enriched = sum(1 for r in results if r is True)
+
+    if enriched > 0:
+        content = json.dumps(cabinets, ensure_ascii=False, indent=2)
+        await _github_commit_file(
+            "data/cabinets.json", content,
+            f"admin: enrichissement Google Places ({enriched} cabinets)",
+        )
+
+    remaining_after = max(0, total_remaining - len(batch_idx))
+    return RedirectResponse(
+        f"/admin/outils?enriched={enriched}&processed={len(batch_idx)}&remaining={remaining_after}",
+        303,
+    )

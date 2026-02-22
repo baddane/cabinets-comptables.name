@@ -35,6 +35,32 @@
   ⚠️ Une tâche est déjà en cours. Attendez qu'elle se termine.
 </div>
 {% endif %}
+{% if request.query_params.get('enriched') is not none and request.query_params.get('processed') is not none %}
+{% set n_enriched  = request.query_params.get('enriched') %}
+{% set n_processed = request.query_params.get('processed') %}
+{% set n_remaining = request.query_params.get('remaining') %}
+<div class="mb-4 bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm flex items-center justify-between">
+  <span>
+    ✅ Lot traité : <strong>{{ n_enriched }} cabinet(s) enrichi(s)</strong> sur {{ n_processed }} traités.
+    {% if n_remaining != '0' %}
+      <span class="text-slate-500 ml-1">Restant à enrichir : {{ n_remaining }}.</span>
+    {% else %}
+      <span class="text-green-600 ml-1 font-medium">Tout est enrichi !</span>
+    {% endif %}
+  </span>
+  {% if n_remaining != '0' %}
+  <a href="/admin/outils"
+     class="ml-4 text-sm font-semibold bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+    Lot suivant →
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+{% if request.query_params.get('error') == 'no_key' %}
+<div class="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+  ❌ <strong>GOOGLE_PLACES_API_KEY</strong> non définie dans Vercel → Settings → Environment Variables.
+</div>
+{% endif %}
 
 <div class="space-y-6">
 
@@ -48,8 +74,19 @@
           Code NAF 69.20Z (Activités comptables, établissements actifs).
         </p>
       </div>
-      {{ task_badge("sirene") }}
+      {% if not vercel_mode %}{{ task_badge("sirene") }}{% endif %}
     </div>
+
+    {% if vercel_mode %}
+    <div class="px-6 py-5">
+      <div class="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm text-slate-600">
+        <strong>Non disponible en mode Vercel.</strong>
+        Lancez en local puis commitez — Vercel redéploiera automatiquement :
+        <pre class="mt-2 bg-slate-100 rounded px-3 py-2 text-xs font-mono text-slate-700">python scraper/scrape_sirene.py --max 5000
+git add data/cabinets.json &amp;&amp; git commit -m "data: import SIRENE" &amp;&amp; git push</pre>
+      </div>
+    </div>
+    {% else %}
     <form method="POST" action="/admin/outils/sirene" class="px-6 py-5">
       <div class="grid grid-cols-2 gap-4 mb-4">
         <div>
@@ -83,6 +120,7 @@
         </button>
       </div>
     </form>
+    {% endif %}
   </div>
 
   <!-- ── 2. Enrichissement Google Places ───────────────────────────────────── -->
@@ -101,30 +139,44 @@
         {% else %}
         <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">❌ Clé API manquante</span>
         {% endif %}
-        {{ task_badge("enrich") }}
+        {% if not vercel_mode %}{{ task_badge("enrich") }}{% endif %}
       </div>
     </div>
     <form method="POST" action="/admin/outils/enrich" class="px-6 py-5">
       {% if not google_key_ok %}
       <div class="mb-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
-        <strong>Clé API manquante.</strong> Définissez la variable d'environnement
+        <strong>Clé API manquante.</strong> Définissez
         <code class="bg-amber-100 px-1 rounded text-xs">GOOGLE_PLACES_API_KEY</code>
-        avant de lancer le serveur admin.<br>
+        dans {% if vercel_mode %}Vercel → Settings → Environment Variables{% else %}vos variables d'environnement{% endif %}.<br>
         <span class="text-xs mt-1 block">
           → <a href="https://console.cloud.google.com/apis/library/places-backend.googleapis.com" target="_blank" class="underline">Console Google Cloud</a>
           — Activez "Places API" puis créez une clé.
         </span>
       </div>
       {% endif %}
+
+      {% if vercel_mode %}
+      <div class="mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
+        <strong>Mode batch Vercel :</strong> maximum 100 cabinets par appel (limite 60 s).
+        Chaque lot commite dans GitHub et déclenche un redéploiement (~1 min).
+        Cliquez sur <em>Lot suivant</em> après chaque déploiement pour continuer.
+        <br><span class="text-xs mt-1 block text-blue-600">
+          Coût ≈ $52 / 1 000 cabinets. Quota Google gratuit : $200/mois.
+        </span>
+      </div>
+      {% endif %}
+
       <div class="grid grid-cols-2 gap-4 mb-4">
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">
-            Nombre max à enrichir
+            Cabinets à enrichir {% if vercel_mode %}(ce lot){% else %}(max){% endif %}
           </label>
-          <input type="number" name="limit" value="1000" min="1" max="10000"
+          <input type="number" name="limit"
+                 value="{% if vercel_mode %}50{% else %}1000{% endif %}"
+                 min="1" max="{% if vercel_mode %}100{% else %}10000{% endif %}"
                  class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
           <p class="text-xs text-slate-400 mt-1">
-            Coût ≈ $52/1 000 cabinets. Quota Google gratuit : $200/mois.
+            {% if vercel_mode %}Max 100 par lot.{% else %}Coût ≈ $52/1 000 cabinets. Quota Google gratuit : $200/mois.{% endif %}
           </p>
         </div>
         <div>
@@ -142,12 +194,14 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l14 9-14 9V3z"/>
           </svg>
-          Lancer l'enrichissement
+          {% if vercel_mode %}Enrichir ce lot{% else %}Lancer l'enrichissement{% endif %}
         </button>
+        {% if not vercel_mode %}
         <button type="button" onclick="loadLog('enrich')"
                 class="text-sm text-slate-500 hover:text-slate-700 underline">
           Voir les logs
         </button>
+        {% endif %}
       </div>
     </form>
   </div>
@@ -158,11 +212,23 @@
       <div>
         <h2 class="font-semibold text-slate-800">Régénérer le site statique</h2>
         <p class="text-xs text-slate-500 mt-0.5">
-          Génère toutes les pages HTML à partir de data/cabinets.json. Durée : ~10–30 secondes.
+          Génère toutes les pages HTML à partir de data/cabinets.json.
+          {% if not vercel_mode %}Durée : ~10–30 secondes.{% endif %}
         </p>
       </div>
-      {{ task_badge("generate") }}
+      {% if not vercel_mode %}{{ task_badge("generate") }}{% endif %}
     </div>
+
+    {% if vercel_mode %}
+    <div class="px-6 py-5">
+      <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
+        <strong>Automatique.</strong>
+        Chaque commit sur GitHub (ajout cabinet, article de blog, enrichissement…)
+        déclenche automatiquement un redéploiement Vercel qui régénère toutes les pages.
+        Aucune action manuelle nécessaire.
+      </div>
+    </div>
+    {% else %}
     <div class="px-6 py-5 flex items-center gap-3">
       <form method="POST" action="/admin/outils/generate">
         <button type="submit"
@@ -178,9 +244,11 @@
         Voir les logs
       </button>
     </div>
+    {% endif %}
   </div>
 
-  <!-- ── Logs ──────────────────────────────────────────────────────────────── -->
+  <!-- ── Logs (mode local uniquement) ─────────────────────────────────────── -->
+  {% if not vercel_mode %}
   <div id="log-panel" class="hidden bg-slate-900 rounded-xl shadow-sm border border-slate-700 overflow-hidden">
     <div class="px-5 py-3 border-b border-slate-700 flex items-center justify-between">
       <span id="log-title" class="text-sm font-medium text-slate-300">Logs</span>
@@ -194,11 +262,13 @@
 Chargement…
     </pre>
   </div>
+  {% endif %}
 
 </div>
 {% endblock %}
 
 {% block scripts %}
+{% if not vercel_mode %}
 <script>
   let _pollTimer = null;
   let _currentTask = null;
@@ -232,7 +302,6 @@ Chargement…
           done: "✅ Terminé", error: "❌ Erreur"
         }[s] || s;
 
-        // Continuer à poller si en cours
         if (s === "running") {
           _pollTimer = setTimeout(pollLog, 2000);
         }
@@ -248,11 +317,11 @@ Chargement…
     document.getElementById("log-panel").classList.add("hidden");
   }
 
-  // Auto-poll si une tâche est en cours au chargement
   {% for task_id, task in tasks.items() %}
   {% if task.status == "running" %}
   loadLog("{{ task_id }}");
   {% endif %}
   {% endfor %}
 </script>
+{% endif %}
 {% endblock %}
