@@ -36,6 +36,7 @@ from fastapi.templating import Jinja2Templates
 import hashlib
 from itsdangerous import TimestampSigner, BadSignature, SignatureExpired
 from slugify import slugify
+from starlette.middleware.base import BaseHTTPMiddleware
 
 # ─── Chemins ─────────────────────────────────────────────────────────────────
 
@@ -117,6 +118,19 @@ if not ADMIN_PASS_HASH:
 
 app = FastAPI(docs_url=None, redoc_url=None)
 templates = Jinja2Templates(directory=str(ADMIN_DIR / "templates"))
+
+
+# ─── Security headers (remplace vercel.json headers) ─────────────────────────
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 # État des tâches en arrière-plan
 _tasks: dict[str, dict] = {}   # {task_id: {status, log_file, started_at}}
@@ -946,11 +960,23 @@ async def import_post(
     })
 
 
-# ─── Redirect /admin → /admin/ ───────────────────────────────────────────────
+# ─── Redirects legacy (anciens URLs Vercel) ───────────────────────────────────
 
-@app.get("/")
-async def root():
-    return RedirectResponse("/admin/", 303)
+@app.get("/cabinet/{slug}")
+async def redirect_cabinet(slug: str):
+    return RedirectResponse(f"/cabinets/{slug}/", status_code=308)
+
+
+@app.get("/ville/{slug}")
+async def redirect_ville(slug: str):
+    return RedirectResponse(f"/villes/{slug}/", status_code=308)
+
+
+# ─── Site statique (monté EN DERNIER pour ne pas masquer les routes /admin) ───
+
+_output_dir = ROOT / "output"
+if _output_dir.exists():
+    app.mount("/", StaticFiles(directory=str(_output_dir), html=True), name="site")
 
 
 # ─── Démarrage ────────────────────────────────────────────────────────────────
