@@ -10,7 +10,10 @@ Variables à définir dans Vercel Dashboard → Settings → Environment Variabl
   GITHUB_TOKEN         → Personal Access Token GitHub (scope: repo)
   GITHUB_REPO          → "owner/repo" (ex: "dupont/cabinets-comptables.name")
   GITHUB_BRANCH        → branche cible (défaut: main)
-  ANTHROPIC_API_KEY    → clé Anthropic (optionnel, pour génération blog)
+  ANTHROPIC_API_KEY    → clé Anthropic Claude (génération blog)
+  GEMINI_API_KEY       → clé Google Gemini (génération blog)
+  DEEPSEEK_API_KEY     → clé DeepSeek (génération blog)
+  OPENAI_API_KEY       → clé OpenAI ChatGPT (génération blog)
 """
 
 import asyncio
@@ -20,6 +23,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import secrets
 from datetime import datetime
 from pathlib import Path
@@ -42,6 +46,13 @@ DATA_FILE = ROOT / "data" / "cabinets.json"
 BLOG_FILE = ROOT / "data" / "blog_posts.json"
 
 BLOG_CATEGORIES = ["Conseils", "Fiscalité", "Comptabilité", "Statuts & Juridique"]
+
+LLM_LABELS = {
+    "claude":   "Claude (Anthropic)",
+    "gemini":   "Gemini (Google)",
+    "deepseek": "DeepSeek",
+    "chatgpt":  "ChatGPT (OpenAI)",
+}
 
 # ─── Config auth ──────────────────────────────────────────────────────────────
 
@@ -68,6 +79,9 @@ def _verify_password(password: str, stored: str) -> bool:
 SECRET_KEY     = os.environ.get("ADMIN_SECRET_KEY") or secrets.token_hex(32)
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
 ANTHROPIC_KEY  = os.environ.get("ANTHROPIC_API_KEY", "")
+GEMINI_KEY     = os.environ.get("GEMINI_API_KEY", "")
+DEEPSEEK_KEY   = os.environ.get("DEEPSEEK_API_KEY", "")
+OPENAI_KEY     = os.environ.get("OPENAI_API_KEY", "")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY", "")
 
 _plain_pw = os.environ.get("ADMIN_PASSWORD", "").strip()
@@ -482,18 +496,26 @@ async def cabinet_new(request: Request, user: str = Depends(_require_auth)):
 @app.post("/admin/cabinets/new")
 async def cabinet_create(
     request: Request, user: str = Depends(_require_auth),
-    name: str          = Form(""),
-    address: str       = Form(""),
-    city: str          = Form(""),
-    postal_code: str   = Form(""),
-    phone: str         = Form(""),
-    website: str       = Form(""),
-    rating: str        = Form(""),
-    reviews_count: str = Form("0"),
-    lat: str           = Form(""),
-    lng: str           = Form(""),
-    siren: str         = Form(""),
-    siret: str         = Form(""),
+    name: str           = Form(""),
+    address: str        = Form(""),
+    city: str           = Form(""),
+    postal_code: str    = Form(""),
+    phone: str          = Form(""),
+    website: str        = Form(""),
+    rating: str         = Form(""),
+    reviews_count: str  = Form("0"),
+    rating_info: str    = Form(""),
+    category: str       = Form(""),
+    open_hours: str     = Form(""),
+    lat: str            = Form(""),
+    lng: str            = Form(""),
+    featured_image: str = Form(""),
+    bing_maps_url: str  = Form(""),
+    email: str          = Form(""),
+    facebook: str       = Form(""),
+    instagram: str      = Form(""),
+    twitter: str        = Form(""),
+    external_id: str    = Form(""),
 ):
     name = name.strip(); city = city.strip()
     if not name or not city:
@@ -506,11 +528,15 @@ async def cabinet_create(
         "name": name, "address": address.strip(),
         "city": city, "postal_code": postal_code.strip(),
         "phone": phone.strip(), "website": website.strip(),
-        "rating": rating.strip(),
-        "reviews_count": int(reviews_count or 0),
+        "rating": rating.strip(), "reviews_count": int(reviews_count or 0),
+        "rating_info": rating_info.strip(), "category": category.strip(),
+        "open_hours": open_hours.strip(),
         "lat": float(lat) if lat.strip() else "",
         "lng": float(lng) if lng.strip() else "",
-        "siren": siren.strip(), "siret": siret.strip(),
+        "featured_image": featured_image.strip(), "bing_maps_url": bing_maps_url.strip(),
+        "email": email.strip(), "facebook": facebook.strip(),
+        "instagram": instagram.strip(), "twitter": twitter.strip(),
+        "external_id": external_id.strip(),
     }
     cabinets = load_data()
     cabinets.append(new_cab)
@@ -536,19 +562,27 @@ async def cabinet_edit(request: Request, idx: int, user: str = Depends(_require_
 @app.post("/admin/cabinets/{idx}/edit")
 async def cabinet_update(
     request: Request, idx: int,
-    user: str          = Depends(_require_auth),
-    name: str          = Form(""),
-    address: str       = Form(""),
-    city: str          = Form(""),
-    postal_code: str   = Form(""),
-    phone: str         = Form(""),
-    website: str       = Form(""),
-    rating: str        = Form(""),
-    reviews_count: str = Form("0"),
-    lat: str           = Form(""),
-    lng: str           = Form(""),
-    siren: str         = Form(""),
-    siret: str         = Form(""),
+    user: str           = Depends(_require_auth),
+    name: str           = Form(""),
+    address: str        = Form(""),
+    city: str           = Form(""),
+    postal_code: str    = Form(""),
+    phone: str          = Form(""),
+    website: str        = Form(""),
+    rating: str         = Form(""),
+    reviews_count: str  = Form("0"),
+    rating_info: str    = Form(""),
+    category: str       = Form(""),
+    open_hours: str     = Form(""),
+    lat: str            = Form(""),
+    lng: str            = Form(""),
+    featured_image: str = Form(""),
+    bing_maps_url: str  = Form(""),
+    email: str          = Form(""),
+    facebook: str       = Form(""),
+    instagram: str      = Form(""),
+    twitter: str        = Form(""),
+    external_id: str    = Form(""),
 ):
     cabinets = load_data()
     if idx < 0 or idx >= len(cabinets):
@@ -564,11 +598,15 @@ async def cabinet_update(
         "name": name, "address": address.strip(),
         "city": city, "postal_code": postal_code.strip(),
         "phone": phone.strip(), "website": website.strip(),
-        "rating": rating.strip(),
-        "reviews_count": int(reviews_count or 0),
+        "rating": rating.strip(), "reviews_count": int(reviews_count or 0),
+        "rating_info": rating_info.strip(), "category": category.strip(),
+        "open_hours": open_hours.strip(),
         "lat": float(lat) if lat.strip() else "",
         "lng": float(lng) if lng.strip() else "",
-        "siren": siren.strip(), "siret": siret.strip(),
+        "featured_image": featured_image.strip(), "bing_maps_url": bing_maps_url.strip(),
+        "email": email.strip(), "facebook": facebook.strip(),
+        "instagram": instagram.strip(), "twitter": twitter.strip(),
+        "external_id": external_id.strip(),
     })
     content = json.dumps(cabinets, ensure_ascii=False, indent=2)
     await _github_commit_file(
@@ -594,6 +632,43 @@ async def cabinet_delete(request: Request, idx: int, user: str = Depends(_requir
 
 # ─── Routes : blog ────────────────────────────────────────────────────────────
 
+async def _call_llm(llm: str, prompt: str) -> str:
+    """Appelle le LLM choisi et retourne le texte brut."""
+    if llm == "gemini":
+        import google.generativeai as genai
+        genai.configure(api_key=GEMINI_KEY)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = await asyncio.to_thread(model.generate_content, prompt)
+        return response.text.strip()
+    elif llm == "deepseek":
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=DEEPSEEK_KEY, base_url="https://api.deepseek.com")
+        r = await client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=4096,
+        )
+        return r.choices[0].message.content.strip()
+    elif llm == "chatgpt":
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=OPENAI_KEY)
+        r = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=4096,
+        )
+        return r.choices[0].message.content.strip()
+    else:  # claude (défaut)
+        from anthropic import AsyncAnthropic
+        client = AsyncAnthropic(api_key=ANTHROPIC_KEY)
+        message = await client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return message.content[0].text.strip()
+
+
 @app.get("/admin/blog", response_class=HTMLResponse)
 async def blog_list(request: Request, user: str = Depends(_require_auth)):
     posts = load_blog()
@@ -601,7 +676,14 @@ async def blog_list(request: Request, user: str = Depends(_require_auth)):
         "request": request, "user": user,
         "posts": posts,
         "categories": BLOG_CATEGORIES,
-        "api_key_ok": bool(ANTHROPIC_KEY),
+        "api_key_ok": bool(ANTHROPIC_KEY or GEMINI_KEY or DEEPSEEK_KEY or OPENAI_KEY),
+        "llm_keys": {
+            "claude":   bool(ANTHROPIC_KEY),
+            "gemini":   bool(GEMINI_KEY),
+            "deepseek": bool(DEEPSEEK_KEY),
+            "chatgpt":  bool(OPENAI_KEY),
+        },
+        "llm_labels": LLM_LABELS,
     })
 
 
@@ -612,21 +694,38 @@ async def blog_generate(
     topic: str      = Form(""),
     category: str   = Form("Conseils"),
     word_count: str = Form("700"),
+    llm: str        = Form("claude"),
 ):
-    if not ANTHROPIC_KEY:
+    llm_key_map = {
+        "claude": ANTHROPIC_KEY, "gemini": GEMINI_KEY,
+        "deepseek": DEEPSEEK_KEY, "chatgpt": OPENAI_KEY,
+    }
+    if not llm_key_map.get(llm):
         return JSONResponse(
-            {"error": "Clé API Anthropic manquante. Définissez ANTHROPIC_API_KEY dans Vercel."},
+            {"error": f"Clé API manquante pour {llm}. Définissez la variable dans Vercel → Environment Variables."},
             status_code=400,
         )
     topic = topic.strip()
     if not topic:
         return JSONResponse({"error": "Veuillez saisir un sujet."}, status_code=400)
 
+    # Interlinking : charger les articles existants
+    existing_posts = load_blog()
+    interlinks = "\n".join(
+        f'- <a href="/blog/{p["slug"]}/">{p["title"]}</a>'
+        for p in existing_posts
+    )
+    interlink_section = (
+        f"\nArticles existants sur ce site (intégrer 2 à 3 liens pertinents dans le texte) :\n{interlinks}\n"
+        "Format du lien interne : <a href=\"/blog/SLUG/\">Titre exact</a>\n"
+    ) if interlinks else ""
+
     prompt = (
         f"Génère un article de blog professionnel en français pour un site annuaire de cabinets comptables.\n\n"
         f"Sujet : {topic}\n"
         f"Catégorie : {category}\n"
-        f"Longueur cible : environ {word_count} mots\n\n"
+        f"Longueur cible : environ {word_count} mots\n"
+        f"{interlink_section}\n"
         "Consignes strictes :\n"
         "- Le contenu est en HTML avec UNIQUEMENT ces balises : <p>, <h2>, <ul>, <li>, <strong>, <a>\n"
         "- 3 à 5 sections titrées avec <h2> (pas de <h1>, pas de <h3>)\n"
@@ -635,25 +734,12 @@ async def blog_generate(
         '<a href="/">l\'annuaire des cabinets comptables</a>\n'
         "- Ton professionnel, pratique, orienté entrepreneurs et PME français\n"
         "- Pas de balise <html>, <head>, <body> ni de doctype\n\n"
-        "Retourne UNIQUEMENT un objet JSON valide (sans markdown, sans bloc de code) avec cette structure :\n"
-        '{\n'
-        '  "title": "Titre accrocheur (60-70 caractères max)",\n'
-        '  "slug": "titre-en-kebab-case-sans-accents",\n'
-        '  "description": "Meta description de 150-160 caractères",\n'
-        '  "reading_time": 7,\n'
-        '  "content": "<p>...</p><h2>...</h2>..."\n'
-        "}"
+        "Retourne UNIQUEMENT un objet JSON valide (sans markdown, sans bloc de code) :\n"
+        '{"title":"...","slug":"...","description":"...","reading_time":7,"content":"..."}'
     )
 
     try:
-        from anthropic import AsyncAnthropic
-        client = AsyncAnthropic(api_key=ANTHROPIC_KEY)
-        message = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=4096,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw = message.content[0].text.strip()
+        raw = await _call_llm(llm, prompt)
         if raw.startswith("```"):
             parts = raw.split("```")
             raw = parts[1] if len(parts) > 1 else raw
@@ -762,17 +848,25 @@ async def password_change(
 
 IMPORT_COLUMNS = [
     ("nom",          "name",          "Nom du cabinet (obligatoire)"),
-    ("adresse",      "address",       "Adresse (numéro + rue)"),
-    ("ville",        "city",          "Ville (obligatoire)"),
+    ("adresse",      "address",       "Adresse complète (rue, code postal, ville)"),
+    ("ville",        "city",          "Ville — extraite automatiquement de l'adresse si absente"),
     ("code_postal",  "postal_code",   "Code postal (ex : 75001)"),
     ("telephone",    "phone",         "Numéro de téléphone"),
     ("site_web",     "website",       "URL du site web"),
-    ("note",         "rating",        "Note Google (ex : 4.5)"),
-    ("nb_avis",      "reviews_count", "Nombre d'avis Google (entier)"),
+    ("note",         "rating",        "Note (ex : 4.5)"),
+    ("nb_avis",      "reviews_count", "Nombre d'avis (entier)"),
+    ("note_info",    "rating_info",   "Source de la note (ex : Trustpilot (3966))"),
+    ("categorie",    "category",      "Catégorie (ex : Comptable)"),
+    ("horaires",     "open_hours",    "Horaires d'ouverture"),
     ("latitude",     "lat",           "Latitude GPS (ex : 48.8566)"),
     ("longitude",    "lng",           "Longitude GPS (ex : 2.3522)"),
-    ("siren",        "siren",         "Numéro SIREN (9 chiffres)"),
-    ("siret",        "siret",         "Numéro SIRET (14 chiffres)"),
+    ("image",        "featured_image","URL de l'image principale"),
+    ("bing_maps",    "bing_maps_url", "URL Bing Maps"),
+    ("email",        "email",         "Adresse e-mail de contact"),
+    ("facebook",     "facebook",      "URL de la page Facebook"),
+    ("instagram",    "instagram",     "URL du profil Instagram"),
+    ("twitter",      "twitter",       "URL du profil Twitter / X"),
+    ("id_externe",   "external_id",   "Identifiant externe (ex : ypid:...)"),
 ]
 
 _COL_MAP: dict[str, str] = {}
@@ -780,11 +874,29 @@ for _fr, _en, _ in IMPORT_COLUMNS:
     _COL_MAP[_fr.lower()] = _en
     _COL_MAP[_en.lower()] = _en
 
+# Noms anglais supplémentaires (exports Bing Maps / tiers)
+_COL_MAP.update({
+    "id":            "external_id",
+    "emails":        "email",
+    "social_medias": "social_medias",
+})
+
 _IMPORT_EXAMPLE = [
-    "Cabinet Dupont & Associés", "12 rue de la Paix", "Paris", "75001",
+    "Cabinet Dupont & Associés", "12 rue de la Paix, 75001 Paris", "Paris", "75001",
     "01 23 45 67 89", "https://www.cabinet-dupont.fr", "4.5", "42",
-    "48.8566", "2.3522", "123456789", "12345678900012",
+    "Google (42)", "Comptable", "Lun-Ven 09:00-18:00",
+    "48.8566", "2.3522", "", "", "contact@cabinet-dupont.fr",
+    "", "", "", "",
 ]
+
+
+def _extract_city_from_address(address: str) -> tuple[str, str, str]:
+    """Extrait (rue, code_postal, ville) depuis une adresse française complète."""
+    m = re.search(r",?\s*(\d{4,5})\s+([^,\d]+?)\s*$", address.strip())
+    if m:
+        street = address[: m.start()].strip().rstrip(",").strip()
+        return street, m.group(1).strip(), m.group(2).strip()
+    return address, "", ""
 
 
 def _normalize_import_row(row: dict) -> dict | None:
@@ -793,14 +905,29 @@ def _normalize_import_row(row: dict) -> dict | None:
         field = _COL_MAP.get(key.strip().lower().replace(" ", "_"))
         if field:
             out[field] = str(val).strip() if val is not None else ""
-    if not out.get("name") or not out.get("city"):
+    if not out.get("name"):
         return None
+    # Auto-extraction ville / code postal depuis adresse complète
+    if out.get("address") and not out.get("city"):
+        street, postal, city = _extract_city_from_address(out["address"])
+        if city:
+            out["address"] = street
+            if not out.get("postal_code"):
+                out["postal_code"] = postal
+            out["city"] = city
+    if not out.get("city"):
+        return None
+    # reviews_count depuis rating_info si absent ("Trustpilot (3966)" → 3966)
+    if not out.get("reviews_count") and out.get("rating_info"):
+        m = re.search(r"\((\d+)\)", out["rating_info"])
+        if m:
+            out["reviews_count"] = m.group(1)
     try:
         out["reviews_count"] = int(float(out.get("reviews_count") or 0))
     except (ValueError, TypeError):
         out["reviews_count"] = 0
     for f in ("lat", "lng"):
-        v = out.get(f, "")
+        v = str(out.get(f, "")).replace(",", ".")
         try:
             out[f] = float(v) if v else ""
         except (ValueError, TypeError):
@@ -905,7 +1032,7 @@ async def import_post(
 
     if rows:
         cabinets = load_data() if mode == "merge" else []
-        idx_siren = {c.get("siren", ""): i for i, c in enumerate(cabinets) if c.get("siren")}
+        idx_extid = {c.get("external_id", ""): i for i, c in enumerate(cabinets) if c.get("external_id")}
         idx_name  = {
             (c.get("name", "").lower(), c.get("city", "").lower()): i
             for i, c in enumerate(cabinets)
@@ -921,8 +1048,8 @@ async def import_post(
                 continue
             if mode == "merge":
                 existing_idx = None
-                if cab.get("siren") and cab["siren"] in idx_siren:
-                    existing_idx = idx_siren[cab["siren"]]
+                if cab.get("external_id") and cab["external_id"] in idx_extid:
+                    existing_idx = idx_extid[cab["external_id"]]
                 else:
                     key = (cab["name"].lower(), cab["city"].lower())
                     existing_idx = idx_name.get(key)
@@ -932,8 +1059,8 @@ async def import_post(
                 else:
                     cabinets.append(cab)
                     new_idx = len(cabinets) - 1
-                    if cab.get("siren"):
-                        idx_siren[cab["siren"]] = new_idx
+                    if cab.get("external_id"):
+                        idx_extid[cab["external_id"]] = new_idx
                     idx_name[(cab["name"].lower(), cab["city"].lower())] = new_idx
                     result["added"] += 1
             else:
