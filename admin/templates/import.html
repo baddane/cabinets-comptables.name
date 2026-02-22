@@ -47,17 +47,63 @@
       {% endif %}
 
       {% if result.added > 0 or result.updated > 0 %}
-      <div class="mt-4 flex flex-wrap items-center gap-3">
-        <span class="text-sm text-green-700 font-medium">Import réussi !</span>
-        <a href="/admin/cabinets"
-           class="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 underline">
-          Voir les cabinets
-        </a>
-        {% if regen %}
-        <span class="inline-flex items-center gap-1.5 text-sm text-violet-700 font-medium animate-pulse">
-          ⚙️ Site en cours de régénération… (~20 s)
-        </span>
+      <div class="mt-4 space-y-3">
+
+        <!-- Statut GitHub -->
+        {% if github_saved == true %}
+        <div class="flex items-start gap-3 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+          <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          <div>
+            <p class="text-sm font-semibold text-green-800">Données sauvegardées sur GitHub</p>
+            <p class="text-xs text-green-700 mt-0.5">
+              Le workflow de régénération est déclenché automatiquement.
+              Le site public sera mis à jour dans <strong>~2 minutes</strong>.
+            </p>
+          </div>
+        </div>
+        {% elif github_saved == false %}
+        <div class="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+          <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <div>
+            <p class="text-sm font-semibold text-red-800">Données non sauvegardées sur GitHub</p>
+            <p class="text-xs text-red-700 mt-0.5">
+              Vérifiez que <code class="bg-red-100 px-1 rounded">GITHUB_TOKEN</code> et
+              <code class="bg-red-100 px-1 rounded">GITHUB_REPO</code>
+              sont bien configurés dans Vercel → Settings → Environment Variables.
+            </p>
+          </div>
+        </div>
         {% endif %}
+
+        <!-- Statut régénération + bouton manuel -->
+        <div class="flex flex-wrap items-center gap-3">
+          <a href="/admin/cabinets"
+             class="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 underline">
+            Voir les cabinets
+          </a>
+          {% if regen %}
+          <span id="regen-status" class="inline-flex items-center gap-1.5 text-sm text-violet-700 font-medium">
+            <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Site en cours de régénération (~2 min)
+          </span>
+          {% else %}
+          <button onclick="triggerRegen(this)"
+                  class="inline-flex items-center gap-1.5 text-sm bg-violet-600 hover:bg-violet-700 text-white font-medium px-4 py-1.5 rounded-lg transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Régénérer le site
+          </button>
+          {% endif %}
+        </div>
       </div>
       {% endif %}
     </div>
@@ -358,5 +404,28 @@
     btn.disabled = true;
     btn.classList.add("opacity-75", "cursor-not-allowed");
   });
+
+  // Déclencher la régénération du site manuellement
+  async function triggerRegen(btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="w-4 h-4 animate-spin inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>Déclenchement…';
+    try {
+      const r = await fetch("/admin/import/regenerate", { method: "POST" });
+      const data = await r.json();
+      if (data.ok) {
+        btn.outerHTML = '<span class="inline-flex items-center gap-1.5 text-sm text-violet-700 font-medium">'
+          + '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>'
+          + 'Site en cours de régénération (~2 min)</span>';
+      } else {
+        btn.disabled = false;
+        btn.textContent = "Régénérer le site";
+        alert("Erreur : " + (data.error || "inconnue"));
+      }
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = "Régénérer le site";
+      alert("Erreur réseau : " + e.message);
+    }
+  }
 </script>
 {% endblock %}

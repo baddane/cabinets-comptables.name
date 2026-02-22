@@ -940,6 +940,9 @@ async def import_page(request: Request, user: str = Depends(_require_auth)):
     return templates.TemplateResponse("import.html", {
         "request": request, "user": user,
         "columns": IMPORT_COLUMNS, "result": None,
+        "regen": False,
+        "github_saved": None,
+        "github_configured": bool(GITHUB_TOKEN and GITHUB_REPO),
         "llm_keys": {
             "claude":   bool(ANTHROPIC_KEY),
             "gemini":   bool(GEMINI_KEY),
@@ -1038,8 +1041,17 @@ async def import_post(
     else:
         result["errors"].append("Format non supporté. Utilisez un fichier .csv ou .xlsx")
 
+    github_saved: bool | None = None
+    regen = False
+
     if rows:
-        cabinets = load_data() if mode == "merge" else []
+        # Lire depuis GitHub (version live) plutôt que le snapshot Vercel figé au déploiement
+        if mode == "merge":
+            raw_gh = await _github_get_file_content("data/cabinets.json")
+            cabinets = json.loads(raw_gh) if raw_gh else load_data()
+        else:
+            cabinets = []
+
         idx_extid = {c.get("external_id", ""): i for i, c in enumerate(cabinets) if c.get("external_id")}
         idx_name  = {
             (c.get("name", "").lower(), c.get("city", "").lower()): i
@@ -1075,15 +1087,29 @@ async def import_post(
                 cabinets.append(cab)
                 result["added"] += 1
 
-        data_content = json.dumps(cabinets, ensure_ascii=False, indent=2)
-        await _github_commit_file(
-            "data/cabinets.json", data_content,
-            f"admin: import CSV ({result['added']} ajoutés, {result['updated']} mis à jour)",
-        )
+        if result["added"] + result["updated"] > 0:
+            data_content = json.dumps(cabinets, ensure_ascii=False, indent=2)
+            github_saved = await _github_commit_file(
+                "data/cabinets.json", data_content,
+                f"admin: import CSV ({result['added']} ajoutés, {result['updated']} mis à jour)",
+            )
+            if github_saved:
+                # Le commit sur data/cabinets.json déclenche automatiquement generate.yml
+                regen = True
+            else:
+                result["errors"].append(
+                    "Données non sauvegardées sur GitHub : vérifiez que GITHUB_TOKEN et "
+                    "GITHUB_REPO sont configurés dans Vercel → Settings → Environment Variables."
+                )
+        else:
+            github_saved = None  # Rien à sauvegarder
 
     return templates.TemplateResponse("import.html", {
         "request": request, "user": user,
         "columns": IMPORT_COLUMNS, "result": result,
+        "regen": regen,
+        "github_saved": github_saved,
+        "github_configured": bool(GITHUB_TOKEN and GITHUB_REPO),
         "llm_keys": {
             "claude":   bool(ANTHROPIC_KEY),
             "gemini":   bool(GEMINI_KEY),
@@ -1092,6 +1118,32 @@ async def import_post(
         },
         "selected_llm": llm.strip().lower(),
     })
+
+
+@app.post("/admin/import/regenerate")
+async def import_regenerate(request: Request, user: str = Depends(_require_auth)):
+    """Déclenche manuellement le workflow generate.yml via workflow_dispatch."""
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        return JSONResponse(
+            {"error": "GITHUB_TOKEN ou GITHUB_REPO non configuré dans Vercel."},
+            status_code=400,
+        )
+    hdrs = {**_GH_HEADERS, "Authorization": f"Bearer {GITHUB_TOKEN}"}
+    try:
+        async with httpx.AsyncClient(timeout=15) as gh:
+            r = await gh.post(
+                f"{_GH_API}/repos/{GITHUB_REPO}/actions/workflows/generate.yml/dispatches",
+                headers=hdrs,
+                json={"ref": GITHUB_BRANCH},
+            )
+            if r.status_code == 204:
+                return JSONResponse({"ok": True})
+            return JSONResponse(
+                {"error": f"GitHub Actions a répondu {r.status_code} : {r.text[:200]}"},
+                status_code=400,
+            )
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
 
 
 # ─── API JSON ─────────────────────────────────────────────────────────────────
