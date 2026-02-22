@@ -75,19 +75,27 @@ ADMIN_USERNAME    = os.environ.get("ADMIN_USERNAME", "admin")
 ADMIN_PASS_HASH   = os.environ.get("ADMIN_PASSWORD_HASH", "")
 GOOGLE_API_KEY    = os.environ.get("GOOGLE_PLACES_API_KEY", "")
 ANTHROPIC_KEY     = os.environ.get("ANTHROPIC_API_KEY", "")
-# Si ADMIN_PASSWORD est défini (Railway), on le hashe au démarrage
-_initial_pw = os.environ.get("ADMIN_PASSWORD", "")
 
-# Première exécution : générer des credentials
-if not ADMIN_PASS_HASH and _initial_pw:
-    ADMIN_PASS_HASH = _hash_password(_initial_pw)
+# ADMIN_PASSWORD (texte clair) a priorité absolue — le plus simple à configurer
+_plain_pw = os.environ.get("ADMIN_PASSWORD", "").strip()
+if _plain_pw:
+    ADMIN_PASS_HASH = _hash_password(_plain_pw)
+    print(f"[auth] Mot de passe chargé depuis ADMIN_PASSWORD (login: {ADMIN_USERNAME})")
 
+# Sinon, ADMIN_PASSWORD_HASH doit être au format 'salt$pbkdf2_hex'
+elif ADMIN_PASS_HASH and "$" not in ADMIN_PASS_HASH:
+    print("[auth] ⚠️  ADMIN_PASSWORD_HASH invalide (format attendu: salt$hash). "
+          "Définissez ADMIN_PASSWORD à la place.")
+    ADMIN_PASS_HASH = ""
+
+# Dernier recours : fichier .credentials local (ou génération auto)
 if not ADMIN_PASS_HASH:
     if CREDS_FILE.exists():
         with open(CREDS_FILE) as f:
             _c = json.load(f)
         ADMIN_USERNAME  = _c.get("username", ADMIN_USERNAME)
         ADMIN_PASS_HASH = _c.get("password_hash", "")
+        print(f"[auth] Credentials chargés depuis {CREDS_FILE}")
     else:
         _pw = secrets.token_urlsafe(16)
         ADMIN_PASS_HASH = _hash_password(_pw)
