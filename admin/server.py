@@ -220,6 +220,30 @@ def _is_busy(task_id: str) -> bool:
     return _tasks.get(task_id, {}).get("status") == "running"
 
 
+# ─── Diagnostic public (temporaire) ──────────────────────────────────────────
+
+@app.get("/admin/diag", response_class=HTMLResponse)
+async def diag():
+    """Endpoint public temporaire — montre l'état de l'auth sans révéler les secrets."""
+    src = "ADMIN_PASSWORD (env)" if os.environ.get("ADMIN_PASSWORD") else \
+          "ADMIN_PASSWORD_HASH (env)" if os.environ.get("ADMIN_PASSWORD_HASH") else \
+          ".credentials (fichier)" if CREDS_FILE.exists() else \
+          "GÉNÉRÉ ALÉATOIREMENT (perdu au redémarrage)"
+    hash_ok = "$" in ADMIN_PASS_HASH if ADMIN_PASS_HASH else False
+    import sys as _sys
+    return f"""<!doctype html><html><body style="font-family:monospace;padding:2em">
+<h2>Diagnostic Auth</h2>
+<table border=1 cellpadding=6>
+<tr><td>Python</td><td>{_sys.version}</td></tr>
+<tr><td>ADMIN_USERNAME</td><td>{ADMIN_USERNAME}</td></tr>
+<tr><td>Source credentials</td><td>{src}</td></tr>
+<tr><td>Hash chargé ?</td><td>{"✅ Oui (format salt$hash)" if hash_ok else "❌ Non ou format invalide"}</td></tr>
+<tr><td>ANTHROPIC_KEY défini ?</td><td>{"✅" if ANTHROPIC_KEY else "❌"}</td></tr>
+</table>
+<p style="color:grey;font-size:0.8em">Supprimez cette route après diagnostic.</p>
+</body></html>"""
+
+
 # ─── Routes : auth ────────────────────────────────────────────────────────────
 
 @app.get("/admin/login", response_class=HTMLResponse)
