@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% set active = "cabinets" %}
+{% set active = "new_cabinet" if mode == "new" else "cabinets" %}
 
 {% block title %}{{ "Modifier" if mode == "edit" else "Ajouter" }} un cabinet{% endblock %}
 {% block page_title %}

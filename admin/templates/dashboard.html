@@ -81,32 +81,54 @@
 </div>
 
 <!-- Actions rapides -->
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-  <h2 class="text-sm font-semibold text-slate-700 mb-4">Actions rapides</h2>
-  <div class="flex flex-wrap gap-3">
+<div>
+  <h2 class="text-sm font-semibold text-slate-700 mb-3">Actions rapides</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+    <!-- Ajouter un cabinet -->
     <a href="/admin/cabinets/new"
-       class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-      </svg>
-      Ajouter un cabinet
-    </a>
-    <a href="/admin/outils"
-       class="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-      </svg>
-      Importer des données
-    </a>
-    <form method="POST" action="/admin/outils/generate" class="inline">
-      <button type="submit"
-              class="inline-flex items-center gap-2 bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+       class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-start gap-4 hover:border-blue-300 hover:shadow-md transition-all group">
+      <div class="bg-blue-100 group-hover:bg-blue-200 p-3 rounded-lg transition-colors">
+        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
         </svg>
-        Régénérer le site{% if last_gen %} <span class="text-xs font-normal opacity-70">({{ last_gen }})</span>{% endif %}
-      </button>
-    </form>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-800 text-sm">Ajouter un cabinet</p>
+        <p class="text-xs text-slate-500 mt-0.5">Créer une nouvelle fiche manuellement</p>
+      </div>
+    </a>
+
+    <!-- Import & Traitement IA -->
+    <a href="/admin/import"
+       class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-start gap-4 hover:border-violet-300 hover:shadow-md transition-all group">
+      <div class="bg-violet-100 group-hover:bg-violet-200 p-3 rounded-lg transition-colors">
+        <svg class="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-800 text-sm">Import &amp; Traitement IA</p>
+        <p class="text-xs text-slate-500 mt-0.5">Importer un fichier Excel ou CSV</p>
+      </div>
+    </a>
+
+    <!-- Générer un article -->
+    <a href="/admin/blog"
+       class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-start gap-4 hover:border-green-300 hover:shadow-md transition-all group">
+      <div class="bg-green-100 group-hover:bg-green-200 p-3 rounded-lg transition-colors">
+        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-800 text-sm">Générer un article</p>
+        <p class="text-xs text-slate-500 mt-0.5">Blog IA — Claude, Gemini, DeepSeek…</p>
+      </div>
+    </a>
+
   </div>
 </div>
 {% endblock %}
