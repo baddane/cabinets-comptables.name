@@ -7,6 +7,40 @@
 {% block content %}
 <div class="space-y-6">
 
+  <!-- ── Avertissement GitHub non configuré ─────────────────────────────────── -->
+  {% if not github_configured %}
+  <div class="bg-amber-50 border border-amber-300 rounded-xl px-5 py-4 flex items-start gap-4">
+    <svg class="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    </svg>
+    <div class="flex-1">
+      <p class="text-sm font-semibold text-amber-800">GitHub non configuré — les imports ne seront pas sauvegardés</p>
+      <p class="text-xs text-amber-700 mt-1">
+        Pour que les données importées soient publiées sur le site, ajoutez ces variables dans
+        <strong>Vercel → Settings → Environment Variables</strong> puis redéployez :
+      </p>
+      <div class="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+        <div class="bg-white border border-amber-200 rounded-lg px-3 py-2">
+          <div class="font-mono font-bold text-slate-700">GITHUB_TOKEN</div>
+          <div class="text-slate-500 mt-0.5">Personal Access Token (scope : <code>repo</code>)</div>
+          <a href="https://github.com/settings/tokens" target="_blank"
+             class="text-blue-600 hover:underline mt-1 inline-block">Créer un token →</a>
+        </div>
+        <div class="bg-white border border-amber-200 rounded-lg px-3 py-2">
+          <div class="font-mono font-bold text-slate-700">GITHUB_REPO</div>
+          <div class="text-slate-500 mt-0.5">Format : <code>owner/repo</code></div>
+          <div class="text-slate-400 mt-0.5">ex : <code>baddane/cabinets-comptables.name</code></div>
+        </div>
+        <div class="bg-white border border-amber-200 rounded-lg px-3 py-2">
+          <div class="font-mono font-bold text-slate-700">GITHUB_BRANCH</div>
+          <div class="text-slate-500 mt-0.5">Branche cible (défaut : <code>main</code>)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- ── Résultat import ───────────────────────────────────────────────────── -->
   {% if result is not none %}
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
