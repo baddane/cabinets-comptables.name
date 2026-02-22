@@ -948,6 +948,8 @@ async def import_page(request: Request, user: str = Depends(_require_auth)):
     return templates.TemplateResponse("import.html", {
         "request": request, "user": user,
         "columns": IMPORT_COLUMNS, "result": None,
+        "llm_keys": _llm_keys_status(),
+        "selected_llm": "claude",
     })
 
 
@@ -1008,6 +1010,7 @@ async def import_post(
     request: Request,
     user: str = Depends(_require_auth),
     mode: str = Form("merge"),
+    llm: str = Form("claude"),
     file: UploadFile = File(...),
 ):
     filename = (file.filename or "").lower()
@@ -1100,6 +1103,8 @@ async def import_post(
         "request": request, "user": user,
         "columns": IMPORT_COLUMNS, "result": result,
         "regen": regen,
+        "llm_keys": _llm_keys_status(),
+        "selected_llm": llm.strip().lower(),
     })
 
 
