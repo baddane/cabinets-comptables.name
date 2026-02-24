@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pip install -r requirements.txt && python generator/generate.py",
+  "buildCommand": "pip install --break-system-packages -r requirements.txt && python generator/generate.py",
   "outputDirectory": "output",
   "cleanUrls": true,
   "trailingSlash": false,
