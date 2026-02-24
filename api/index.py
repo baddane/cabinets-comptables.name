@@ -7,9 +7,11 @@ Variables à définir dans Vercel Dashboard → Settings → Environment Variabl
   ADMIN_SECRET_KEY     → chaîne aléatoire longue (ex: openssl rand -hex 32)
   ADMIN_USERNAME       → votre login (défaut: admin)
   ADMIN_PASSWORD       → votre mot de passe (obligatoire)
-  GITHUB_TOKEN         → Personal Access Token GitHub (scope: repo)
-  GITHUB_REPO          → "owner/repo" (ex: "dupont/cabinets-comptables.name")
-  GITHUB_BRANCH        → branche cible (défaut: main)
+  GITHUB_TOKEN         → Personal Access Token GitHub (scope: repo) [deprecated: using Supabase now]
+  GITHUB_REPO          → "owner/repo" (ex: "dupont/cabinets-comptables.name") [deprecated]
+  GITHUB_BRANCH        → branche cible (défaut: main) [deprecated]
+  SUPABASE_URL         → URL de votre projet Supabase (ex: https://xxxxx.supabase.co)
+  SUPABASE_ANON_KEY    → Clé anonyme Supabase (publique, pour l'accès client)
   ANTHROPIC_API_KEY    → clé Anthropic Claude (génération blog)
   GEMINI_API_KEY       → clé Google Gemini (génération blog)
   DEEPSEEK_API_KEY     → clé DeepSeek (génération blog)
@@ -36,6 +38,7 @@ from fastapi.templating import Jinja2Templates
 from itsdangerous import BadSignature, SignatureExpired, TimestampSigner
 from slugify import slugify
 from starlette.middleware.base import BaseHTTPMiddleware
+from supabase import create_client, Client
 
 # ─── Chemins ──────────────────────────────────────────────────────────────────
 
@@ -98,6 +101,21 @@ GITHUB_REPO   = os.environ.get("GITHUB_REPO", "")   # "owner/repo"
 GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "main")
 
 _GH_API = "https://api.github.com"
+
+# ─── Supabase Configuration ────────────────────────────────────────────────────
+
+SUPABASE_URL  = os.environ.get("SUPABASE_URL", "")
+SUPABASE_KEY  = os.environ.get("SUPABASE_ANON_KEY", "")
+SUPABASE_TABLE = "comptables"  # Nom de la table
+
+_supabase_client: Client | None = None
+
+def get_supabase() -> Client | None:
+    """Initialise et retourne le client Supabase."""
+    global _supabase_client
+    if _supabase_client is None and SUPABASE_URL and SUPABASE_KEY:
+        _supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    return _supabase_client
 _GH_HEADERS = {
     "Accept": "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
@@ -209,6 +227,145 @@ async def _github_get_file_content(repo_path: str) -> str | None:
         return r.text
 
 
+# ─── Supabase Data Operations ──────────────────────────────────────────────────
+
+async def _supabase_upsert_cabinets(cabinets: list[dict]) -> bool:
+    """Upsert cabinets dans Supabase (merge mode: met à jour ou ajoute)."""
+    sb = get_supabase()
+    if not sb:
+        return False
+    try:
+        # Préparer les données pour Supabase
+        data_to_insert = []
+        for cab in cabinets:
+            record = {
+                "name": cab.get("name", ""),
+                "address": cab.get("address", ""),
+                "city": cab.get("city", ""),
+                "postal_code": cab.get("postal_code", ""),
+                "phone": cab.get("phone", ""),
+                "website": cab.get("website", ""),
+                "email": cab.get("email", ""),
+                "rating": cab.get("rating"),
+                "reviews_count": cab.get("reviews_count", 0),
+                "rating_info": cab.get("rating_info", ""),
+                "category": cab.get("category", ""),
+                "open_hours": cab.get("open_hours", ""),
+                "featured_image": cab.get("featured_image", ""),
+                "bing_maps_url": cab.get("bing_maps_url", ""),
+                "latitude": cab.get("lat"),
+                "longitude": cab.get("lng"),
+                "facebook": cab.get("facebook", ""),
+                "instagram": cab.get("instagram", ""),
+                "twitter": cab.get("twitter", ""),
+                "external_id": cab.get("external_id", ""),
+                "social_medias": cab.get("social_medias", ""),
+            }
+            # Utiliser external_id comme clé primaire si disponible
+            if record["external_id"]:
+                record["id"] = record["external_id"]
+            else:
+                # Génère un id unique basé sur name+city
+                record["id"] = f"{record['name'].lower().replace(' ', '_')}_{record['city'].lower().replace(' ', '_')}"
+            data_to_insert.append(record)
+
+        # Upsert dans Supabase (remplace si existe, crée sinon)
+        result = sb.table(SUPABASE_TABLE).upsert(data_to_insert, returning="representation").execute()
+        return bool(result.data)
+    except Exception as e:
+        print(f"[supabase] Erreur upsert : {e}")
+        return False
+
+
+async def _supabase_replace_cabinets(cabinets: list[dict]) -> bool:
+    """Replace tous les cabinets dans Supabase (replace mode: supprime et réinsère)."""
+    sb = get_supabase()
+    if not sb:
+        return False
+    try:
+        # Supprimer tous les enregistrements existants
+        sb.table(SUPABASE_TABLE).delete().neq("id", "").execute()
+
+        # Insérer les nouveaux
+        data_to_insert = []
+        for cab in cabinets:
+            record = {
+                "name": cab.get("name", ""),
+                "address": cab.get("address", ""),
+                "city": cab.get("city", ""),
+                "postal_code": cab.get("postal_code", ""),
+                "phone": cab.get("phone", ""),
+                "website": cab.get("website", ""),
+                "email": cab.get("email", ""),
+                "rating": cab.get("rating"),
+                "reviews_count": cab.get("reviews_count", 0),
+                "rating_info": cab.get("rating_info", ""),
+                "category": cab.get("category", ""),
+                "open_hours": cab.get("open_hours", ""),
+                "featured_image": cab.get("featured_image", ""),
+                "bing_maps_url": cab.get("bing_maps_url", ""),
+                "latitude": cab.get("lat"),
+                "longitude": cab.get("lng"),
+                "facebook": cab.get("facebook", ""),
+                "instagram": cab.get("instagram", ""),
+                "twitter": cab.get("twitter", ""),
+                "external_id": cab.get("external_id", ""),
+                "social_medias": cab.get("social_medias", ""),
+            }
+            if record["external_id"]:
+                record["id"] = record["external_id"]
+            else:
+                record["id"] = f"{record['name'].lower().replace(' ', '_')}_{record['city'].lower().replace(' ', '_')}"
+            data_to_insert.append(record)
+
+        if data_to_insert:
+            result = sb.table(SUPABASE_TABLE).insert(data_to_insert, returning="representation").execute()
+            return bool(result.data)
+        return True
+    except Exception as e:
+        print(f"[supabase] Erreur replace : {e}")
+        return False
+
+
+async def _supabase_get_all_cabinets() -> list[dict]:
+    """Récupère tous les cabinets depuis Supabase."""
+    sb = get_supabase()
+    if not sb:
+        return []
+    try:
+        result = sb.table(SUPABASE_TABLE).select("*").execute()
+        cabinets = []
+        for row in result.data:
+            cab = {
+                "name": row.get("name", ""),
+                "address": row.get("address", ""),
+                "city": row.get("city", ""),
+                "postal_code": row.get("postal_code", ""),
+                "phone": row.get("phone", ""),
+                "website": row.get("website", ""),
+                "email": row.get("email", ""),
+                "rating": row.get("rating"),
+                "reviews_count": row.get("reviews_count", 0),
+                "rating_info": row.get("rating_info", ""),
+                "category": row.get("category", ""),
+                "open_hours": row.get("open_hours", ""),
+                "featured_image": row.get("featured_image", ""),
+                "bing_maps_url": row.get("bing_maps_url", ""),
+                "lat": row.get("latitude"),
+                "lng": row.get("longitude"),
+                "facebook": row.get("facebook", ""),
+                "instagram": row.get("instagram", ""),
+                "twitter": row.get("twitter", ""),
+                "external_id": row.get("external_id", ""),
+                "social_medias": row.get("social_medias", ""),
+            }
+            cabinets.append(cab)
+        return cabinets
+    except Exception as e:
+        print(f"[supabase] Erreur get_all : {e}")
+        return []
+
+
 # ─── Google Places API (enrichissement async) ─────────────────────────────────
 
 _PLACES_BASE = "https://maps.googleapis.com/maps/api/place"
@@ -301,10 +458,16 @@ async def _enrich_one(sem: asyncio.Semaphore, client: httpx.AsyncClient, cab: di
 # ─── Données ──────────────────────────────────────────────────────────────────
 
 def load_data() -> list[dict]:
+    """Charge les données depuis le fichier local (généré par le generator depuis Supabase)."""
     if DATA_FILE.exists():
         with open(DATA_FILE, encoding="utf-8") as f:
             return json.load(f)
     return []
+
+
+async def load_data_async() -> list[dict]:
+    """Charge les données depuis Supabase de façon asynchrone (pour l'API)."""
+    return await _supabase_get_all_cabinets()
 
 
 def load_blog() -> list[dict]:
@@ -435,14 +598,14 @@ async def logout():
 @app.get("/admin/", response_class=HTMLResponse)
 @app.get("/admin", response_class=HTMLResponse)
 async def dashboard(request: Request, user: str = Depends(_require_auth)):
-    cabinets = load_data()
+    cabinets = await load_data_async()
     stats    = data_stats(cabinets)
-    github_ok = bool(GITHUB_TOKEN and GITHUB_REPO)
+    supabase_ok = bool(SUPABASE_URL and SUPABASE_KEY)
     return templates.TemplateResponse("dashboard.html", {
         "request": request, "user": user,
         "stats": stats, "last_gen": None,
         "tasks": {},
-        "github_ok": github_ok,
+        "supabase_ok": supabase_ok,
     })
 
 
@@ -456,7 +619,7 @@ async def cabinets_list(
     city: str = "",
     page: int = 1,
 ):
-    cabinets = load_data()
+    cabinets = await load_data_async()
     if q:
         ql = q.lower()
         cabinets = [c for c in cabinets if ql in c.get("name", "").lower()
@@ -473,7 +636,7 @@ async def cabinets_list(
     page      = max(1, min(page, pages))
     sliced    = cabinets[(page - 1) * per_page: page * per_page]
 
-    all_data   = load_data()
+    all_data   = await load_data_async()
     all_cities = sorted({c.get("city", "") for c in all_data if c.get("city")})
 
     return templates.TemplateResponse("cabinets.html", {
@@ -941,8 +1104,8 @@ async def import_page(request: Request, user: str = Depends(_require_auth)):
         "request": request, "user": user,
         "columns": IMPORT_COLUMNS, "result": None,
         "regen": False,
-        "github_saved": None,
-        "github_configured": bool(GITHUB_TOKEN and GITHUB_REPO),
+        "supabase_saved": None,
+        "supabase_configured": bool(SUPABASE_URL and SUPABASE_KEY),
         "llm_keys": {
             "claude":   bool(ANTHROPIC_KEY),
             "gemini":   bool(GEMINI_KEY),
@@ -1041,14 +1204,13 @@ async def import_post(
     else:
         result["errors"].append("Format non supporté. Utilisez un fichier .csv ou .xlsx")
 
-    github_saved: bool | None = None
+    supabase_saved: bool | None = None
     regen = False
 
     if rows:
-        # Lire depuis GitHub (version live) plutôt que le snapshot Vercel figé au déploiement
+        # Lire depuis Supabase pour merge, ou partir de 0 pour replace
         if mode == "merge":
-            raw_gh = await _github_get_file_content("data/cabinets.json")
-            cabinets = json.loads(raw_gh) if raw_gh else load_data()
+            cabinets = await _supabase_get_all_cabinets()
         else:
             cabinets = []
 
@@ -1088,28 +1250,29 @@ async def import_post(
                 result["added"] += 1
 
         if result["added"] + result["updated"] > 0:
-            data_content = json.dumps(cabinets, ensure_ascii=False, indent=2)
-            github_saved = await _github_commit_file(
-                "data/cabinets.json", data_content,
-                f"admin: import CSV ({result['added']} ajoutés, {result['updated']} mis à jour)",
-            )
-            if github_saved:
-                # Le commit sur data/cabinets.json déclenche automatiquement generate.yml
-                regen = True
+            # Sauvegarder dans Supabase
+            if mode == "merge":
+                supabase_saved = await _supabase_upsert_cabinets(cabinets)
+            else:
+                supabase_saved = await _supabase_replace_cabinets(cabinets)
+
+            if supabase_saved:
+                # Les données sont immédiatement disponibles dans Supabase
+                result["message"] = f"✓ {result['added']} entrée(s) ajoutée(s), {result['updated']} mise(s) à jour et sauvegardées dans Supabase."
             else:
                 result["errors"].append(
-                    "Données non sauvegardées sur GitHub : vérifiez que GITHUB_TOKEN et "
-                    "GITHUB_REPO sont configurés dans Vercel → Settings → Environment Variables."
+                    "Erreur de sauvegarde Supabase : vérifiez que SUPABASE_URL et "
+                    "SUPABASE_ANON_KEY sont configurés dans Vercel → Settings → Environment Variables."
                 )
         else:
-            github_saved = None  # Rien à sauvegarder
+            supabase_saved = None  # Rien à sauvegarder
 
     return templates.TemplateResponse("import.html", {
         "request": request, "user": user,
         "columns": IMPORT_COLUMNS, "result": result,
         "regen": regen,
-        "github_saved": github_saved,
-        "github_configured": bool(GITHUB_TOKEN and GITHUB_REPO),
+        "supabase_saved": supabase_saved,
+        "supabase_configured": bool(SUPABASE_URL and SUPABASE_KEY),
         "llm_keys": {
             "claude":   bool(ANTHROPIC_KEY),
             "gemini":   bool(GEMINI_KEY),
