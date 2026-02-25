@@ -1,182 +1,797 @@
 {% extends "base.html" %}
 
-{% block title %}Annuaire Cabinets Comptables France — Trouvez un Expert-Comptable{% endblock %}
-{% block description %}Annuaire complet des cabinets comptables en France. Trouvez un expert-comptable près de chez vous : adresse, téléphone, horaires. {{ total_cabinets }} cabinets référencés dans {{ total_cities }} villes.{% endblock %}
-{% block og_title %}Annuaire Cabinets Comptables France{% endblock %}
-{% block og_description %}{{ total_cabinets }} cabinets comptables référencés dans {{ total_cities }} villes françaises. Trouvez votre expert-comptable.{% endblock %}
+{% block title %}Cabinets-Comptables.name — Trouvez un Expert-Comptable en France{% endblock %}
+{% block description %}Annuaire national des cabinets comptables. {{ total_cabinets }} experts-comptables référencés dans {{ total_cities }} villes. Comparez avis et tarifs, devis gratuit en 2 minutes.{% endblock %}
+{% block og_title %}Cabinets-Comptables.name — Annuaire Expert-Comptable France{% endblock %}
+{% block og_description %}{{ total_cabinets }} cabinets comptables dans {{ total_cities }} villes françaises. Trouvez votre expert-comptable, comparez les avis.{% endblock %}
+
+{# Homepage : pas de contrainte max-width sur le <main>, chaque section gère son propre conteneur #}
+{% block main_class %}p-0 overflow-x-hidden{% endblock %}
+
+{% block head %}
+<style>
+  /* ── Animations ─────────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0) rotate(0deg); }
+    50%     { transform: translateY(-10px) rotate(1deg); }
+  }
+  @keyframes pulseRing {
+    0%   { transform: scale(1); opacity: .6; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+  .fade-up { animation: fadeUp .7s cubic-bezier(.22,1,.36,1) both; }
+  .d1 { animation-delay: .1s; } .d2 { animation-delay: .2s; }
+  .d3 { animation-delay: .3s; } .d4 { animation-delay: .4s; }
+  .d5 { animation-delay: .5s; }
+
+  /* ── Shared layout helpers ──────────────────────── */
+  .container-xl {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 40px;
+  }
+  .section-label {
+    display: inline-block;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: var(--green);
+    background: var(--green-pale);
+    padding: 5px 13px; border-radius: 100px;
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(26px, 3vw, 40px);
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -.02em;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+  .section-subtitle {
+    font-size: 16px; line-height: 1.65;
+    color: var(--ink-muted); font-weight: 300;
+    max-width: 520px;
+  }
+
+  /* ══════════════════════════════════════════════════
+     HERO
+  ══════════════════════════════════════════════════ */
+  .hero-wrap {
+    min-height: calc(100vh - 68px);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 80px 40px 60px;
+    align-items: center;
+    gap: 64px;
+    position: relative;
+  }
+  /* Arrière-plan radial doux */
+  .hero-bg {
+    position: fixed; inset: 0; pointer-events: none; z-index: -1;
+    background:
+      radial-gradient(ellipse 60% 50% at 15% 20%, rgba(10,124,92,.07) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 85% 80%, rgba(245,98,45,.06) 0%, transparent 70%);
+  }
+
+  /* Badge live */
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--green-pale);
+    border: 1px solid rgba(10,124,92,.2);
+    color: var(--green);
+    padding: 6px 14px; border-radius: 100px;
+    font-size: 13px; font-weight: 500;
+    margin-bottom: 22px;
+  }
+  .hero-badge-dot {
+    width: 6px; height: 6px;
+    background: var(--green); border-radius: 50%;
+    position: relative;
+  }
+  .hero-badge-dot::after {
+    content: '';
+    position: absolute; inset: -3px;
+    border-radius: 50%;
+    background: var(--green); opacity: .3;
+    animation: pulseRing 1.5s ease-out infinite;
+  }
+
+  /* Titre hero */
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 4vw, 58px);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -.02em;
+    color: var(--ink);
+    margin-bottom: 22px;
+  }
+  .hero-title .accent-green { color: var(--green); }
+  .hero-title .accent-orange {
+    color: var(--orange); position: relative; display: inline-block;
+  }
+  .hero-title .accent-orange::after {
+    content: ''; position: absolute;
+    bottom: 2px; left: 0; right: 0; height: 4px;
+    background: var(--orange); border-radius: 2px; opacity: .25;
+  }
+  .hero-subtitle {
+    font-size: 17px; line-height: 1.65;
+    color: var(--ink-muted); font-weight: 300;
+    max-width: 440px; margin-bottom: 36px;
+  }
+
+  /* Barre de recherche */
+  .search-wrap {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 6px 6px 6px 18px;
+    display: flex; gap: 8px; align-items: center;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 16px;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .search-wrap:focus-within {
+    border-color: var(--green);
+    box-shadow: 0 0 0 4px rgba(10,124,92,.1), var(--shadow-md);
+  }
+  .search-icon-svg { color: var(--ink-faint); flex-shrink: 0; }
+  #search-input {
+    flex: 1; border: none; background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; color: var(--ink);
+    outline: none; padding: 8px 0;
+  }
+  #search-input::placeholder { color: var(--ink-faint); }
+  #search-clear {
+    display: none; background: none; border: none;
+    cursor: pointer; color: var(--ink-faint);
+    padding: 4px; border-radius: 50%;
+    transition: color .2s;
+  }
+  #search-clear:hover { color: var(--ink); }
+  .search-btn-pill {
+    background: var(--green); color: white;
+    border: none; border-radius: 20px;
+    padding: 13px 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    transition: all .2s;
+    flex-shrink: 0;
+  }
+  .search-btn-pill:hover { background: var(--green-light); transform: scale(1.02); }
+
+  /* Dropdown résultats */
+  #search-results {
+    position: absolute; left: 0; right: 0; top: calc(100% + 8px);
+    background: white; border-radius: var(--radius);
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-lg); z-index: 50;
+    overflow: hidden; max-height: 380px; overflow-y: auto;
+    text-align: left;
+  }
+  #search-results.hidden { display: none; }
+  #search-empty {
+    position: absolute; left: 0; right: 0; top: calc(100% + 8px);
+    background: white; border-radius: var(--radius);
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-lg); z-index: 50;
+    padding: 24px 20px; text-align: center;
+    color: var(--ink-faint); font-size: 14px;
+  }
+  #search-empty.hidden { display: none; }
+
+  /* Tags suggestions */
+  .search-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .search-tag {
+    background: white; border: 1px solid var(--border);
+    color: var(--ink-muted); font-size: 13px;
+    padding: 5px 13px; border-radius: 100px;
+    cursor: pointer; text-decoration: none;
+    transition: all .2s;
+  }
+  .search-tag:hover {
+    border-color: var(--green); color: var(--green);
+    background: var(--green-pale);
+  }
+
+  /* Carte hero flottante (droite) */
+  .hero-visual {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .hero-shape {
+    width: 360px; height: 360px;
+    background: linear-gradient(135deg, var(--green-pale), rgba(245,98,45,.08));
+    border-radius: 40% 60% 55% 45% / 45% 40% 60% 55%;
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    animation: float 8s ease-in-out infinite;
+  }
+  .hero-card {
+    background: white; border-radius: var(--radius-xl);
+    padding: 28px; box-shadow: var(--shadow-lg);
+    position: relative; z-index: 2;
+    animation: float 6s ease-in-out infinite;
+    border: 1px solid rgba(255,255,255,.8);
+    width: 100%; max-width: 360px;
+  }
+  .hero-card-header {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
+  }
+  .hero-card-logo {
+    width: 50px; height: 50px;
+    background: linear-gradient(135deg, var(--green), #05C3A0);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .hero-card-badge {
+    margin-left: auto;
+    background: var(--green-pale); color: var(--green);
+    font-size: 11px; font-weight: 600;
+    padding: 4px 10px; border-radius: 100px; white-space: nowrap;
+  }
+  .hero-card-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; }
+  .hero-card-city { font-size: 13px; color: var(--ink-muted); margin-top: 2px; }
+  .hero-card-stars { display: flex; gap: 2px; margin-bottom: 4px; font-size: 15px; color: #F5A623; }
+  .hero-card-tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0; }
+  .hero-tag {
+    background: var(--cream); border: 1px solid var(--border);
+    font-size: 12px; color: var(--ink-muted);
+    padding: 3px 9px; border-radius: 6px;
+  }
+  .hero-card-btn {
+    width: 100%; background: var(--green); color: white;
+    border: none; border-radius: 14px; padding: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: background .2s;
+  }
+  .hero-card-btn:hover { background: var(--green-light); }
+  .float-chip {
+    position: absolute; background: white;
+    border-radius: var(--radius); padding: 10px 14px;
+    box-shadow: var(--shadow-md); border: 1px solid var(--border);
+    font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+    animation: float 5s ease-in-out infinite; z-index: 3;
+  }
+  .chip-1 { top: -18px; right: -24px; animation-delay: -2s; color: var(--green); }
+  .chip-2 { bottom: 0;  left: -32px; animation-delay: -4s; color: var(--orange); }
+
+  /* ══════════════════════════════════════════════════
+     STATS BAR
+  ══════════════════════════════════════════════════ */
+  .stats-bar {
+    background: var(--ink); padding: 0 40px;
+    display: flex; align-items: center; justify-content: center;
+    overflow-x: auto;
+  }
+  .stat-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 22px 40px;
+    border-right: 1px solid rgba(255,255,255,.08);
+    flex-shrink: 0;
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-emoji { font-size: 26px; }
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 26px;
+    color: white; line-height: 1;
+  }
+  .stat-num span { color: var(--orange); }
+  .stat-lbl { font-size: 12px; color: rgba(255,255,255,.45); margin-top: 3px; }
+
+  /* ══════════════════════════════════════════════════
+     ÉTAPES
+  ══════════════════════════════════════════════════ */
+  .steps-section { padding: 88px 0; }
+  .steps-intro { text-align: center; max-width: 540px; margin: 0 auto 60px; }
+  .steps-grid {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 28px;
+    position: relative;
+  }
+  .steps-grid::before {
+    content: '';
+    position: absolute; top: 34px; left: 22%; right: 22%; height: 2px;
+    background: linear-gradient(to right, var(--green), var(--orange));
+  }
+  .step-card {
+    background: white; border-radius: var(--radius-xl); padding: 32px 28px;
+    border: 1.5px solid var(--border);
+    position: relative; z-index: 1;
+    transition: transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s, border-color .3s;
+  }
+  .step-card:hover { transform: translateY(-8px); box-shadow: var(--shadow-lg); border-color: var(--green); }
+  .step-num {
+    width: 56px; height: 56px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px;
+    margin-bottom: 20px;
+  }
+  .num-1 { background: var(--green-pale); color: var(--green); }
+  .num-2 { background: var(--orange-pale); color: var(--orange); }
+  .num-3 { background: #EEF2FF; color: #4F46E5; }
+  .step-emoji { font-size: 28px; margin-bottom: 12px; display: block; }
+  .step-ttl {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px;
+    color: var(--ink); margin-bottom: 10px;
+  }
+  .step-desc { font-size: 14px; color: var(--ink-muted); line-height: 1.65; }
+
+  /* ══════════════════════════════════════════════════
+     VILLES
+  ══════════════════════════════════════════════════ */
+  .cities-section {
+    background: white;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 88px 0;
+  }
+  .section-header-row {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 44px;
+  }
+  .see-all-link { color: var(--green); font-size: 14px; font-weight: 600; text-decoration: none; }
+  .see-all-link:hover { text-decoration: underline; }
+  .cities-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+  .city-card {
+    background: var(--cream); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 22px 18px;
+    text-decoration: none; color: var(--ink);
+    display: flex; align-items: center; justify-content: space-between;
+    transition: all .25s cubic-bezier(.22,1,.36,1);
+  }
+  .city-card:hover {
+    border-color: var(--green); background: var(--green-pale);
+    transform: translateY(-4px); box-shadow: var(--shadow-md);
+  }
+  .city-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; margin-bottom: 3px; }
+  .city-count { font-size: 13px; color: var(--ink-muted); }
+  .city-arrow {
+    width: 34px; height: 34px; background: white;
+    border-radius: 10px; border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; transition: all .2s; flex-shrink: 0;
+  }
+  .city-card:hover .city-arrow {
+    background: var(--green); border-color: var(--green); color: white;
+    transform: translateX(3px);
+  }
+
+  /* ══════════════════════════════════════════════════
+     BLOG
+  ══════════════════════════════════════════════════ */
+  .blog-section { padding: 88px 0; background: var(--cream); }
+  .blog-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
+  .blog-card {
+    background: white; border: 1.5px solid var(--border);
+    border-radius: var(--radius-xl); overflow: hidden;
+    text-decoration: none; color: var(--ink);
+    display: flex; flex-direction: column;
+    transition: all .3s cubic-bezier(.22,1,.36,1);
+  }
+  .blog-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); border-color: var(--green); }
+  .blog-cover {
+    height: 140px; display: flex; align-items: center; justify-content: center;
+    font-size: 44px; overflow: hidden;
+  }
+  .bc-1 { background: linear-gradient(135deg,#E6F5F0,#B2E8D6); }
+  .bc-2 { background: linear-gradient(135deg,#FFF0EB,#FFD4C2); }
+  .bc-3 { background: linear-gradient(135deg,#EEF2FF,#C7D2FE); }
+  .bc-4 { background: linear-gradient(135deg,#FFFBEB,#FDE68A); }
+  .bc-5 { background: linear-gradient(135deg,#F5F3FF,#DDD6FE); }
+  .blog-body { padding: 22px; flex: 1; display: flex; flex-direction: column; }
+  .blog-cat {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--green); margin-bottom: 8px;
+  }
+  .blog-ttl {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px;
+    line-height: 1.35; color: var(--ink); margin-bottom: 8px; flex: 1;
+  }
+  .blog-meta { font-size: 12px; color: var(--ink-faint); margin-top: 14px; }
+
+  /* ══════════════════════════════════════════════════
+     DERNIERS CABINETS
+  ══════════════════════════════════════════════════ */
+  .recents-section {
+    padding: 88px 0;
+    background: white;
+    border-top: 1px solid var(--border);
+  }
+  .recents-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+  .recent-card {
+    background: var(--cream); border: 1.5px solid var(--border);
+    border-radius: var(--radius); padding: 18px;
+    text-decoration: none; color: var(--ink);
+    display: flex; align-items: center; gap: 14px;
+    transition: all .25s;
+  }
+  .recent-card:hover {
+    border-color: var(--green); background: var(--green-pale);
+    transform: translateY(-3px); box-shadow: var(--shadow-sm);
+  }
+  .recent-avatar {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 18px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--green), var(--green-light));
+  }
+  .recent-name {
+    font-weight: 600; font-size: 13px;
+    color: var(--ink); line-height: 1.35;
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .recent-city { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+  .recent-rating { font-size: 11px; color: #F5A623; margin-top: 3px; }
+
+  /* ══════════════════════════════════════════════════
+     SECTION PROMO (raison d'être SEO)
+  ══════════════════════════════════════════════════ */
+  .seo-section { padding: 88px 0; background: var(--cream); }
+  .seo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 48px; }
+  .seo-card {
+    background: white; border: 1.5px solid var(--border);
+    border-radius: var(--radius-xl); padding: 32px;
+  }
+  .seo-card-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; margin-bottom: 16px;
+  }
+  .seo-card-ttl {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px;
+    color: var(--ink); margin-bottom: 10px;
+  }
+  .seo-card-desc { font-size: 14px; color: var(--ink-muted); line-height: 1.7; }
+
+  /* ══════════════════════════════════════════════════
+     RESPONSIVE
+  ══════════════════════════════════════════════════ */
+  @media (max-width: 1024px) {
+    .hero-wrap { grid-template-columns: 1fr; padding: 60px 24px 48px; gap: 0; }
+    .hero-visual { display: none; }
+    .steps-grid { grid-template-columns: 1fr; }
+    .steps-grid::before { display: none; }
+    .cities-grid { grid-template-columns: repeat(2,1fr); }
+    .blog-grid { grid-template-columns: repeat(2,1fr); }
+    .recents-grid { grid-template-columns: repeat(2,1fr); }
+    .seo-grid { grid-template-columns: 1fr; }
+    .stat-item { padding: 20px 28px; }
+    .container-xl { padding: 0 24px; }
+    .steps-section, .cities-section, .blog-section, .recents-section, .seo-section { padding: 64px 0; }
+  }
+  @media (max-width: 640px) {
+    .hero-wrap { padding: 40px 20px 40px; min-height: auto; }
+    .cities-grid { grid-template-columns: 1fr 1fr; }
+    .blog-grid { grid-template-columns: 1fr; }
+    .recents-grid { grid-template-columns: 1fr; }
+    .container-xl { padding: 0 20px; }
+    .stats-bar { padding: 0 12px; }
+    .stat-item { padding: 18px 16px; }
+    .stat-num { font-size: 20px; }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
 
-<!-- Hero -->
-<section class="text-center py-12 mb-6">
-  <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-    Trouvez un Cabinet Comptable<br class="hidden md:block"> en France
-  </h1>
-  <p class="text-lg text-gray-500 max-w-2xl mx-auto mb-8">
-    Annuaire national des <strong>cabinets comptables</strong> et <strong>experts-comptables</strong>.
-    Comptabilité, bilan, liasse fiscale, déclarations fiscales&nbsp;: trouvez le professionnel adapté à votre situation.
-  </p>
+<!-- Fond radial hero -->
+<div class="hero-bg" aria-hidden="true"></div>
 
-  <!-- ── Search bar ── -->
-  <div class="relative max-w-2xl mx-auto" id="search-container">
-    <div class="flex items-center bg-white border-2 border-gray-200 rounded-2xl shadow-md focus-within:border-blue-500 focus-within:shadow-lg transition-all px-4 py-1">
-      <!-- Search icon -->
-      <svg class="w-5 h-5 text-gray-400 flex-shrink-0 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
-      </svg>
-      <input
-        id="search-input"
-        type="search"
-        placeholder="Ville, cabinet comptable…"
-        autocomplete="off"
-        spellcheck="false"
-        aria-label="Rechercher un cabinet comptable"
-        aria-autocomplete="list"
-        aria-controls="search-results"
-        aria-expanded="false"
-        class="flex-1 py-3 text-base text-gray-800 placeholder-gray-400 bg-transparent outline-none"
-      >
-      <!-- Clear button -->
-      <button id="search-clear"
-              class="hidden ml-2 text-gray-400 hover:text-gray-600 p-1 rounded-full transition"
-              aria-label="Effacer la recherche">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
+<!-- ══════════════════════════════════════════════════
+     HERO
+══════════════════════════════════════════════════ -->
+<section>
+  <div class="hero-wrap">
+
+    <!-- Gauche : texte + recherche -->
+    <div>
+      <div class="hero-badge fade-up">
+        <span class="hero-badge-dot"></span>
+        Annuaire national · {{ total_cabinets }} cabinets
+      </div>
+
+      <h1 class="hero-title fade-up d1">
+        Trouvez votre<br>
+        <span class="accent-orange">expert-comptable</span><br>
+        <span class="accent-green">idéal</span> en France
+      </h1>
+
+      <p class="hero-subtitle fade-up d2">
+        Comparez les cabinets comptables près de chez vous.
+        Avis vérifiés, {{ total_cities }} villes couvertes, devis gratuit en 2 minutes.
+      </p>
+
+      <!-- Barre de recherche (IDs conservés pour le JS existant) -->
+      <div id="search-container" class="relative fade-up d3">
+        <div class="search-wrap">
+          <svg class="search-icon-svg w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+          </svg>
+          <input
+            id="search-input"
+            type="search"
+            placeholder="Ville, cabinet comptable, expert…"
+            autocomplete="off" spellcheck="false"
+            aria-label="Rechercher un cabinet comptable"
+            aria-autocomplete="list"
+            aria-controls="search-results"
+            aria-expanded="false"
+          >
+          <button id="search-clear" aria-label="Effacer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+          <button class="search-btn-pill" onclick="document.getElementById('search-input').focus()">
+            Rechercher →
+          </button>
+        </div>
+
+        <!-- Dropdown résultats -->
+        <ul id="search-results" role="listbox" aria-label="Résultats de recherche" class="hidden"></ul>
+        <div id="search-empty" class="hidden">Aucun résultat pour cette recherche.</div>
+      </div>
+
+      <!-- Tags tendance -->
+      <div class="search-tags fade-up d4">
+        <span style="font-size:13px;color:var(--ink-faint);margin-right:4px;">Tendances :</span>
+        <a href="/villes/paris/" class="search-tag">Paris</a>
+        <a href="/villes/lyon/" class="search-tag">Lyon</a>
+        <a href="/villes/bordeaux/" class="search-tag">Bordeaux</a>
+        <a href="/villes/marseille/" class="search-tag">Marseille</a>
+        <a href="/villes/nantes/" class="search-tag">Nantes</a>
+      </div>
     </div>
 
-    <!-- Dropdown results -->
-    <ul id="search-results"
-        role="listbox"
-        aria-label="Résultats de recherche"
-        class="hidden absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-gray-200 shadow-xl z-40 overflow-hidden max-h-96 overflow-y-auto text-left">
-    </ul>
-
-    <!-- No results message -->
-    <div id="search-empty"
-         class="hidden absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-gray-200 shadow-xl z-40 px-5 py-6 text-center text-gray-400 text-sm">
-      Aucun résultat pour cette recherche.
+    <!-- Droite : carte flottante décorative -->
+    <div class="hero-visual fade-up d2" aria-hidden="true">
+      <div style="position:relative;width:100%;max-width:380px;">
+        <div class="hero-shape"></div>
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <div class="hero-card-logo">🏢</div>
+            <div>
+              <div class="hero-card-name">Cabinet Expert Paris</div>
+              <div class="hero-card-city">📍 Paris 9ème</div>
+            </div>
+            <span class="hero-card-badge">✓ Vérifié</span>
+          </div>
+          <div class="hero-card-stars">★★★★★</div>
+          <div style="font-size:13px;color:var(--ink-muted);margin-bottom:12px;">4.9 · 124 avis Google</div>
+          <div class="hero-card-tags">
+            <span class="hero-tag">Startups</span>
+            <span class="hero-tag">Freelances</span>
+            <span class="hero-tag">SAS / SASU</span>
+          </div>
+          <button class="hero-card-btn">Voir la fiche →</button>
+        </div>
+        <div class="float-chip chip-1">
+          <span>✅</span>
+          <div>
+            <div>Cabinet vérifié OEC</div>
+            <div style="font-size:10px;color:var(--ink-faint);">Inscrit à l'Ordre</div>
+          </div>
+        </div>
+        <div class="float-chip chip-2">
+          <span>⭐</span>
+          <div>
+            <div>Nouvel avis</div>
+            <div style="font-size:10px;color:var(--ink-faint);">★★★★★ Excellent</div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-  <!-- /Search bar -->
 
-  <div class="inline-flex flex-wrap justify-center items-center gap-x-4 gap-y-2 bg-blue-50 border border-blue-100 rounded-full px-6 py-2 text-sm text-blue-700 mt-8">
-    <span>✅ {{ total_cabinets }} cabinets référencés</span>
-    <span class="text-blue-300 hidden sm:inline">|</span>
-    <span>🏙️ {{ total_cities }} villes couvertes</span>
-    <span class="text-blue-300 hidden sm:inline">|</span>
-    <span>🔄 Mis à jour mensuellement</span>
   </div>
 </section>
 
 <!-- ADSENSE_SLOT_HOME_TOP -->
 
-<!-- Grille des villes -->
-<section class="mb-12">
-  <h2 class="text-2xl font-bold text-gray-900 mb-6">
-    Cabinets Comptables par Ville
-  </h2>
-  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-    {% for city in cities %}
-    <a href="/villes/{{ city.slug }}/"
-       class="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition p-5 flex flex-col">
-      <!-- Couleur décorative -->
-      <div class="w-full h-2 rounded-full mb-4" style="background-color: {{ city.color }};"></div>
-      <h3 class="font-bold text-gray-900 group-hover:text-blue-700 transition mb-1">
-        {{ city.name }}
-      </h3>
-      <p class="text-sm text-gray-400">{{ city.count }} cabinet{% if city.count > 1 %}s{% endif %}</p>
-      <span class="mt-3 text-xs text-blue-600 font-medium group-hover:underline">
-        Voir les cabinets →
-      </span>
-    </a>
-    {% endfor %}
+<!-- ══════════════════════════════════════════════════
+     STATS BAR
+══════════════════════════════════════════════════ -->
+<div class="stats-bar">
+  <div class="stat-item fade-up d1">
+    <span class="stat-emoji">🏢</span>
+    <div>
+      <div class="stat-num">{{ total_cabinets }}<span>+</span></div>
+      <div class="stat-lbl">cabinets référencés</div>
+    </div>
+  </div>
+  <div class="stat-item fade-up d2">
+    <span class="stat-emoji">🏙️</span>
+    <div>
+      <div class="stat-num">{{ total_cities }}<span>+</span></div>
+      <div class="stat-lbl">villes couvertes</div>
+    </div>
+  </div>
+  <div class="stat-item fade-up d3">
+    <span class="stat-emoji">⭐</span>
+    <div>
+      <div class="stat-num">10 <span>000+</span></div>
+      <div class="stat-lbl">avis Google collectés</div>
+    </div>
+  </div>
+  <div class="stat-item fade-up d4">
+    <span class="stat-emoji">🎯</span>
+    <div>
+      <div class="stat-num">2 <span>min</span></div>
+      <div class="stat-lbl">pour trouver un comptable</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     COMMENT ÇA MARCHE
+══════════════════════════════════════════════════ -->
+<section class="steps-section">
+  <div class="container-xl">
+    <div class="steps-intro">
+      <span class="section-label">Comment ça marche</span>
+      <h2 class="section-title">Trouvez votre comptable<br>en 3 étapes simples</h2>
+      <p class="section-subtitle" style="margin:0 auto;">Comparer des cabinets comptables n'a jamais été aussi simple et transparent.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card fade-up d1">
+        <div class="step-num num-1">1</div>
+        <span class="step-emoji">🔍</span>
+        <div class="step-ttl">Cherchez par ville</div>
+        <p class="step-desc">Entrez votre ville dans la barre de recherche. Notre annuaire couvre {{ total_cities }} villes en France.</p>
+      </div>
+      <div class="step-card fade-up d2">
+        <div class="step-num num-2">2</div>
+        <span class="step-emoji">📊</span>
+        <div class="step-ttl">Comparez les cabinets</div>
+        <p class="step-desc">Consultez les notes Google, adresses, téléphones et horaires de chaque cabinet.</p>
+      </div>
+      <div class="step-card fade-up d3">
+        <div class="step-num num-3">3</div>
+        <span class="step-emoji">📞</span>
+        <div class="step-ttl">Contactez directement</div>
+        <p class="step-desc">Appelez ou prenez rendez-vous directement depuis la fiche du cabinet. Zéro intermédiaire.</p>
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- ADSENSE_SLOT_HOME_MID -->
 
-<!-- Section SEO -->
-<section class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 mb-12">
-  <h2 class="text-xl font-bold text-gray-900 mb-4">
-    Pourquoi faire appel à un cabinet comptable&nbsp;?
-  </h2>
-  <div class="grid md:grid-cols-2 gap-6 text-sm text-gray-600 leading-relaxed">
-    <div>
-      <h3 class="font-semibold text-gray-800 mb-2">Expertise comptable et fiscale</h3>
-      <p>
-        Un <strong>expert-comptable</strong> vous accompagne dans la gestion de votre
-        <strong>comptabilité</strong>, l'établissement de votre <strong>bilan</strong>,
-        de votre <strong>liasse fiscale</strong> et de vos déclarations TVA.
-        Qu'il s'agisse d'une TPE, d'une PME ou d'un indépendant, le cabinet comptable
-        est un partenaire essentiel.
-      </p>
-    </div>
-    <div>
-      <h3 class="font-semibold text-gray-800 mb-2">Comment choisir son cabinet comptable&nbsp;?</h3>
-      <p>
-        Privilégiez un cabinet proche de votre siège social pour faciliter les échanges.
-        Vérifiez que l'expert-comptable est inscrit à l'<strong>Ordre des Experts-Comptables</strong>.
-        Comparez les honoraires et les services inclus (paie, juridique, conseil fiscal).
-      </p>
-    </div>
-  </div>
-</section>
-
-<!-- Section Blog -->
-{% if blog_posts %}
-<section class="mb-12">
-  <div class="flex items-center justify-between mb-6">
-    <h2 class="text-2xl font-bold text-gray-900">Blog Comptabilité</h2>
-    <a href="/blog/" class="text-sm text-blue-600 hover:underline font-medium">Voir tous les articles →</a>
-  </div>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-    {% for post in blog_posts %}
-    <a href="/blog/{{ post.slug }}/"
-       class="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition flex flex-col overflow-hidden">
-      <div class="h-1.5 w-full" style="background-color: {{ post.color }};"></div>
-      <div class="p-5 flex flex-col flex-1">
-        <span class="text-xs font-semibold mb-2" style="color: {{ post.color }};">{{ post.category }}</span>
-        <h3 class="font-bold text-gray-900 group-hover:text-blue-700 transition text-sm leading-snug mb-2 flex-1">
-          {{ post.title }}
-        </h3>
-        <div class="flex items-center justify-between mt-3">
-          <span class="text-xs text-gray-400">{{ post.reading_time }} min</span>
-          <span class="text-xs text-blue-600 group-hover:underline">Lire →</span>
-        </div>
+<!-- ══════════════════════════════════════════════════
+     VILLES — top 8 par nombre de cabinets
+══════════════════════════════════════════════════ -->
+<div class="cities-section">
+  <div class="container-xl">
+    <div class="section-header-row">
+      <div>
+        <span class="section-label">Annuaire local</span>
+        <h2 class="section-title" style="margin-bottom:0;">Cabinets comptables<br>par ville</h2>
       </div>
-    </a>
-    {% endfor %}
+      <a href="/villes/" class="see-all-link">Voir toutes les {{ total_cities }} villes →</a>
+    </div>
+    <div class="cities-grid">
+      {% for city in cities | sort(attribute='count', reverse=True) | list %}
+      {% if loop.index <= 8 %}
+      <a href="/villes/{{ city.slug }}/" class="city-card fade-up">
+        <div>
+          <div class="city-name">{{ city.name }}</div>
+          <div class="city-count">{{ city.count }} cabinet{% if city.count > 1 %}s{% endif %}</div>
+        </div>
+        <div class="city-arrow">→</div>
+      </a>
+      {% endif %}
+      {% endfor %}
+    </div>
   </div>
-</section>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     BLOG
+══════════════════════════════════════════════════ -->
+{% if blog_posts %}
+<div class="blog-section">
+  <div class="container-xl">
+    <div class="section-header-row">
+      <div>
+        <span class="section-label">Ressources</span>
+        <h2 class="section-title" style="margin-bottom:0;">Le guide de la comptabilité<br>pour les entrepreneurs</h2>
+      </div>
+      <a href="/blog/" class="see-all-link">Tous les articles →</a>
+    </div>
+    <div class="blog-grid">
+      {% set covers = ['bc-1','bc-2','bc-3','bc-4','bc-5'] %}
+      {% set emojis = ['💼','📊','🧾','📋','💡'] %}
+      {% for post in blog_posts %}
+      <a href="/blog/{{ post.slug }}/" class="blog-card fade-up">
+        <div class="blog-cover {{ covers[loop.index0 % 5] }}">{{ emojis[loop.index0 % 5] }}</div>
+        <div class="blog-body">
+          <div class="blog-cat">{{ post.category }}</div>
+          <div class="blog-ttl">{{ post.title }}</div>
+          <div class="blog-meta">⏱ {{ post.reading_time }} min · {{ post.date }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
 {% endif %}
 
-<!-- Derniers cabinets ajoutés -->
-<section class="mb-8">
-  <h2 class="text-2xl font-bold text-gray-900 mb-6">Cabinets récemment référencés</h2>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    {% for cabinet in recent_cabinets %}
-    <a href="/cabinets/{{ cabinet.slug }}/"
-       class="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition p-5">
-      <div class="flex items-start gap-3">
-        <div class="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold text-sm"
-             style="background-color: #1e3a5f;">
-          {{ cabinet.name[0] | upper }}
-        </div>
+<!-- ══════════════════════════════════════════════════
+     DERNIERS CABINETS RÉFÉRENCÉS
+══════════════════════════════════════════════════ -->
+<section class="recents-section">
+  <div class="container-xl">
+    <div class="section-header-row">
+      <div>
+        <span class="section-label">Nouveaux référencements</span>
+        <h2 class="section-title" style="margin-bottom:0;">Cabinets récemment<br>ajoutés à l'annuaire</h2>
+      </div>
+      <a href="/villes/" class="see-all-link">Voir tous les cabinets →</a>
+    </div>
+    <div class="recents-grid">
+      {% for cabinet in recent_cabinets %}
+      <a href="/cabinets/{{ cabinet.slug }}/" class="recent-card fade-up">
+        <div class="recent-avatar">{{ cabinet.name[0] | upper }}</div>
         <div class="min-w-0">
-          <h3 class="font-semibold text-gray-900 group-hover:text-blue-700 transition text-sm leading-tight mb-1 truncate">
-            {{ cabinet.name }}
-          </h3>
-          <p class="text-xs text-gray-500">{{ cabinet.city }}</p>
+          <div class="recent-name">{{ cabinet.name }}</div>
+          <div class="recent-city">📍 {{ cabinet.city }}</div>
           {% if cabinet.rating %}
-          <p class="text-xs text-amber-500 mt-1">★ {{ cabinet.rating }}</p>
+          <div class="recent-rating">★ {{ cabinet.rating }}</div>
           {% endif %}
         </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION SEO — Pourquoi un cabinet comptable ?
+══════════════════════════════════════════════════ -->
+<section class="seo-section">
+  <div class="container-xl">
+    <div class="steps-intro" style="margin-bottom:0;">
+      <span class="section-label">Guides & conseils</span>
+      <h2 class="section-title">Pourquoi faire appel<br>à un expert-comptable&nbsp;?</h2>
+    </div>
+    <div class="seo-grid">
+      <div class="seo-card">
+        <div class="seo-card-icon" style="background:var(--green-pale);">🏛️</div>
+        <div class="seo-card-ttl">Expertise comptable et fiscale</div>
+        <p class="seo-card-desc">
+          Un <strong>expert-comptable</strong> vous accompagne dans la gestion de votre
+          <strong>comptabilité</strong>, l'établissement de votre <strong>bilan</strong>,
+          de votre <strong>liasse fiscale</strong> et de vos déclarations TVA.
+          Qu'il s'agisse d'une TPE, d'une PME ou d'un indépendant, le cabinet comptable
+          est un partenaire essentiel pour votre entreprise.
+        </p>
       </div>
-    </a>
-    {% endfor %}
+      <div class="seo-card">
+        <div class="seo-card-icon" style="background:var(--orange-pale);">🎯</div>
+        <div class="seo-card-ttl">Comment choisir son cabinet comptable&nbsp;?</div>
+        <p class="seo-card-desc">
+          Privilégiez un cabinet proche de votre siège social pour faciliter les échanges.
+          Vérifiez que l'expert-comptable est inscrit à l'<strong>Ordre des Experts-Comptables</strong>.
+          Comparez les honoraires, les avis Google et les services inclus (paie, juridique, conseil fiscal).
+          Notre annuaire couvre {{ total_cabinets }} cabinets dans {{ total_cities }} villes.
+        </p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -187,7 +802,7 @@
   "@type": "WebSite",
   "name": "Cabinets-Comptables.name",
   "url": "https://cabinets-comptables.name",
-  "description": "Annuaire national des cabinets d'expertise comptable en France",
+  "description": "Annuaire national des cabinets d'expertise comptable en France — {{ total_cabinets }} cabinets dans {{ total_cities }} villes",
   "potentialAction": {
     "@type": "SearchAction",
     "target": "https://cabinets-comptables.name/villes/{search_term_string}/",
@@ -196,76 +811,64 @@
 }
 </script>
 
-<!-- ── Client-side search engine ── -->
+<!-- ── Moteur de recherche client-side ── -->
 <script>
 (function () {
   'use strict';
 
-  var input     = document.getElementById('search-input');
-  var results   = document.getElementById('search-results');
-  var emptyMsg  = document.getElementById('search-empty');
-  var clearBtn  = document.getElementById('search-clear');
+  var input    = document.getElementById('search-input');
+  var results  = document.getElementById('search-results');
+  var emptyMsg = document.getElementById('search-empty');
+  var clearBtn = document.getElementById('search-clear');
 
-  var index     = null;   // loaded lazily on first keystroke
-  var loading   = false;
-  var activeIdx = -1;     // keyboard nav cursor
+  var index   = null;
+  var loading = false;
+  var activeIdx = -1;
 
-  /* ── Normalise a string for comparison (remove accents, lowercase) ── */
   function norm(s) {
     return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   }
 
-  /* ── Highlight the matched portion of text ── */
   function highlight(text, query) {
-    var nText  = norm(text);
-    var nQuery = norm(query);
+    var nText = norm(text), nQuery = norm(query);
     var i = nText.indexOf(nQuery);
     if (i === -1) return escHtml(text);
-    return (
-      escHtml(text.slice(0, i)) +
-      '<mark class="bg-yellow-100 text-gray-900 rounded">' +
-      escHtml(text.slice(i, i + query.length)) +
-      '</mark>' +
-      escHtml(text.slice(i + query.length))
-    );
+    return escHtml(text.slice(0,i)) +
+      '<mark style="background:#FFF0EB;color:var(--orange);border-radius:3px;padding:0 1px;">' +
+      escHtml(text.slice(i, i + query.length)) + '</mark>' +
+      escHtml(text.slice(i + query.length));
   }
 
   function escHtml(s) {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  /* ── Load the search index once ── */
   function loadIndex(cb) {
     if (index !== null) { cb(); return; }
     if (loading) return;
     loading = true;
     fetch('/search-index.json')
-      .then(function(r) { return r.json(); })
-      .then(function(data) { index = data; loading = false; cb(); })
-      .catch(function() { loading = false; });
+      .then(function(r){ return r.json(); })
+      .then(function(d){ index = d; loading = false; cb(); })
+      .catch(function(){ loading = false; });
   }
 
-  /* ── Run search and render results ── */
   function doSearch(query) {
     if (!query) { hideDropdown(); return; }
-    loadIndex(function () { render(query); });
+    loadIndex(function(){ render(query); });
   }
 
   function render(query) {
     var q = norm(query.trim());
     if (!q) { hideDropdown(); return; }
 
-    var villes   = [];
-    var cabinets = [];
-
+    var villes = [], cabinets = [];
     for (var i = 0; i < index.length; i++) {
       var item = index[i];
       if (item.t === 'v') {
         if (norm(item.n).indexOf(q) !== -1) villes.push(item);
       } else {
-        if (norm(item.n).indexOf(q) !== -1 || norm(item.v).indexOf(q) !== -1) {
-          cabinets.push(item);
-        }
+        if (norm(item.n).indexOf(q) !== -1 || norm(item.v).indexOf(q) !== -1) cabinets.push(item);
       }
       if (villes.length >= 5 && cabinets.length >= 5) break;
     }
@@ -274,52 +877,48 @@
     if (total === 0) {
       results.classList.add('hidden');
       emptyMsg.classList.remove('hidden');
-      input.setAttribute('aria-expanded', 'false');
+      input.setAttribute('aria-expanded','false');
       return;
     }
-
     emptyMsg.classList.add('hidden');
     activeIdx = -1;
     var html = '';
 
     if (villes.length > 0) {
-      html += '<li class="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider select-none" role="presentation">Villes</li>';
+      html += '<li style="padding:10px 16px 6px;font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;" role="presentation">Villes</li>';
       villes.slice(0,5).forEach(function(v, idx) {
-        html += (
-          '<li role="option" data-href="/villes/' + escHtml(v.s) + '/" ' +
-          'class="search-item flex items-center gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition" ' +
-          'data-idx="' + idx + '">' +
-          '<span class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm flex-shrink-0" style="background-color:#1e3a5f;">🏙️</span>' +
-          '<div class="min-w-0">' +
-          '<p class="font-medium text-gray-900 text-sm">' + highlight(v.n, query.trim()) + '</p>' +
-          '<p class="text-xs text-gray-400">' + v.c + ' cabinet' + (v.c > 1 ? 's' : '') + '</p>' +
-          '</div></li>'
-        );
+        html += '<li role="option" data-href="/villes/' + escHtml(v.s) + '/" ' +
+          'class="search-item" data-idx="' + idx + '" ' +
+          'style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background .15s;" ' +
+          'onmouseover="this.style.background=\'var(--green-pale)\'" onmouseout="this.style.background=\'\'">' +
+          '<span style="width:32px;height:32px;border-radius:8px;background:var(--green-pale);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🏙️</span>' +
+          '<div style="min-width:0;">' +
+          '<div style="font-weight:600;font-size:14px;color:var(--ink);">' + highlight(v.n, query.trim()) + '</div>' +
+          '<div style="font-size:12px;color:var(--ink-faint);">' + v.c + ' cabinet' + (v.c > 1 ? 's' : '') + '</div>' +
+          '</div></li>';
       });
     }
 
     if (cabinets.length > 0) {
-      html += '<li class="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider border-t border-gray-100 select-none" role="presentation">Cabinets</li>';
+      html += '<li style="padding:10px 16px 6px;font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;border-top:1px solid var(--border);" role="presentation">Cabinets</li>';
       cabinets.slice(0,5).forEach(function(c, idx) {
-        html += (
-          '<li role="option" data-href="/cabinets/' + escHtml(c.s) + '/" ' +
-          'class="search-item flex items-center gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition" ' +
-          'data-idx="' + (villes.slice(0,5).length + idx) + '">' +
-          '<span class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm flex-shrink-0 font-bold" style="background-color:#1e3a5f;">' +
+        html += '<li role="option" data-href="/cabinets/' + escHtml(c.s) + '/" ' +
+          'class="search-item" data-idx="' + (villes.slice(0,5).length + idx) + '" ' +
+          'style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background .15s;" ' +
+          'onmouseover="this.style.background=\'var(--green-pale)\'" onmouseout="this.style.background=\'\'">' +
+          '<span style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--green),var(--green-light));display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;flex-shrink:0;">' +
           escHtml(c.n.charAt(0).toUpperCase()) + '</span>' +
-          '<div class="min-w-0">' +
-          '<p class="font-medium text-gray-900 text-sm truncate">' + highlight(c.n, query.trim()) + '</p>' +
-          '<p class="text-xs text-gray-400">' + escHtml(c.v) + '</p>' +
-          '</div></li>'
-        );
+          '<div style="min-width:0;">' +
+          '<div style="font-weight:600;font-size:14px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + highlight(c.n, query.trim()) + '</div>' +
+          '<div style="font-size:12px;color:var(--ink-faint);">' + escHtml(c.v) + '</div>' +
+          '</div></li>';
       });
     }
 
     results.innerHTML = html;
     results.classList.remove('hidden');
-    input.setAttribute('aria-expanded', 'true');
+    input.setAttribute('aria-expanded','true');
 
-    /* Click on result */
     results.querySelectorAll('.search-item').forEach(function(el) {
       el.addEventListener('mousedown', function(e) {
         e.preventDefault();
@@ -328,60 +927,67 @@
     });
   }
 
-  /* ── Keyboard navigation ── */
   function moveActive(dir) {
     var items = results.querySelectorAll('.search-item');
     if (!items.length) return;
-    items[activeIdx] && items[activeIdx].classList.remove('bg-blue-50');
+    if (activeIdx >= 0) items[activeIdx].style.background = '';
     activeIdx = (activeIdx + dir + items.length) % items.length;
-    var el = items[activeIdx];
-    el.classList.add('bg-blue-50');
-    el.scrollIntoView({ block: 'nearest' });
+    items[activeIdx].style.background = 'var(--green-pale)';
+    items[activeIdx].scrollIntoView({ block: 'nearest' });
   }
 
   function hideDropdown() {
     results.classList.add('hidden');
     emptyMsg.classList.add('hidden');
-    input.setAttribute('aria-expanded', 'false');
+    input.setAttribute('aria-expanded','false');
     activeIdx = -1;
   }
 
-  /* ── Event listeners ── */
-  input.addEventListener('input', function () {
+  input.addEventListener('input', function() {
     var q = input.value.trim();
-    clearBtn.classList.toggle('hidden', !q);
+    clearBtn.style.display = q ? 'block' : 'none';
     doSearch(q);
   });
 
-  input.addEventListener('keydown', function (e) {
+  input.addEventListener('keydown', function(e) {
     if (results.classList.contains('hidden')) return;
-    if (e.key === 'ArrowDown')  { e.preventDefault(); moveActive(1); }
-    else if (e.key === 'ArrowUp')   { e.preventDefault(); moveActive(-1); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); moveActive(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moveActive(-1); }
     else if (e.key === 'Enter') {
       e.preventDefault();
       var items = results.querySelectorAll('.search-item');
-      if (activeIdx >= 0 && items[activeIdx]) {
+      if (activeIdx >= 0 && items[activeIdx])
         window.location.href = items[activeIdx].getAttribute('data-href');
-      }
     }
     else if (e.key === 'Escape') { hideDropdown(); input.blur(); }
   });
 
-  clearBtn.addEventListener('click', function () {
+  clearBtn.addEventListener('click', function() {
     input.value = '';
-    clearBtn.classList.add('hidden');
-    hideDropdown();
-    input.focus();
+    clearBtn.style.display = 'none';
+    hideDropdown(); input.focus();
   });
 
-  document.addEventListener('click', function (e) {
-    if (!document.getElementById('search-container').contains(e.target)) {
-      hideDropdown();
-    }
+  document.addEventListener('click', function(e) {
+    if (!document.getElementById('search-container').contains(e.target)) hideDropdown();
   });
 
-  /* Pre-load index on hover/focus for snappier UX */
-  input.addEventListener('focus', function () { loadIndex(function(){}); });
+  input.addEventListener('focus', function() { loadIndex(function(){}); });
+
+  // Scroll animations via IntersectionObserver
+  var io = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.style.animationPlayState = 'running';
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.fade-up').forEach(function(el) {
+    el.style.animationPlayState = 'paused';
+    io.observe(el);
+  });
 })();
 </script>
 

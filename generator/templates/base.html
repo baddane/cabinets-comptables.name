@@ -7,7 +7,7 @@
   <meta name="description" content="{% block description %}Trouvez un cabinet comptable en France. Annuaire des experts-comptables par ville.{% endblock %}">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://cabinets-comptables.name{% block canonical %}/{% endblock %}">
-  <meta name="theme-color" content="#162d4a">
+  <meta name="theme-color" content="#0A7C5C">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="/favicon.png">
@@ -19,6 +19,11 @@
   <meta property="og:title" content="{% block og_title %}Annuaire Cabinets Comptables France{% endblock %}">
   <meta property="og:description" content="{% block og_description %}Trouvez un cabinet comptable en France.{% endblock %}">
   <meta property="og:url" content="https://cabinets-comptables.name{% block og_url %}/{% endblock %}">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
 
   <!-- TailwindCSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -37,126 +42,290 @@
   <!-- ADSENSE_SLOT_HEAD -->
 
   <style>
-    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    /* ── Design System ──────────────────────────────── */
+    :root {
+      --green:       #0A7C5C;
+      --green-light: #12A87A;
+      --green-pale:  #E6F5F0;
+      --orange:      #F5622D;
+      --orange-pale: #FFF0EB;
+      --cream:       #FAF8F4;
+      --ink:         #1A1A2E;
+      --ink-muted:   #5A5A72;
+      --ink-faint:   #9898AA;
+      --border:      #E8E6E0;
+      --shadow-sm:   0 2px 8px rgba(26,26,46,.06);
+      --shadow-md:   0 8px 32px rgba(26,26,46,.10);
+      --shadow-lg:   0 24px 64px rgba(26,26,46,.14);
+      --radius:      16px;
+      --radius-xl:   28px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* breadcrumb helpers used by other pages */
     .breadcrumb a:not(:last-child)::after { content: ' › '; margin: 0 4px; color: #9ca3af; }
+
+    /* ── Navigation ───────────────────────────────── */
+    #site-nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(250,248,244,.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      height: 68px;
+      padding: 0 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: box-shadow .3s;
+    }
+    #site-nav.scrolled { box-shadow: var(--shadow-md); }
+
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; flex-shrink: 0;
+    }
+    .nav-logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--green), var(--green-light));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 4px 12px rgba(10,124,92,.3);
+      flex-shrink: 0;
+    }
+    .nav-logo-text {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 15px;
+      color: var(--ink); line-height: 1.2;
+    }
+    .nav-logo-text span { color: var(--green); }
+
+    .nav-links-desktop {
+      display: flex; align-items: center; gap: 4px;
+      list-style: none; margin: 0; padding: 0;
+    }
+    .nav-links-desktop a {
+      text-decoration: none; color: var(--ink-muted);
+      font-size: 14px; font-weight: 500;
+      padding: 6px 14px; border-radius: 8px;
+      transition: all .2s;
+    }
+    .nav-links-desktop a:hover { color: var(--ink); background: var(--border); }
+
+    .btn-nav-primary {
+      padding: 8px 18px;
+      background: var(--green); color: white;
+      border: none; border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      transition: all .2s;
+      box-shadow: 0 2px 8px rgba(10,124,92,.25);
+      white-space: nowrap;
+    }
+    .btn-nav-primary:hover { background: var(--green-light); transform: translateY(-1px); }
+
+    /* ── Footer ───────────────────────────────────── */
+    .site-footer {
+      background: var(--ink);
+      color: rgba(255,255,255,.55);
+      padding: 64px 40px 32px;
+    }
+    .footer-inner { max-width: 1200px; margin: 0 auto; }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+      padding-bottom: 48px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      margin-bottom: 28px;
+    }
+    .footer-brand-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 16px;
+      color: white; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 9px;
+    }
+    .footer-brand-icon {
+      width: 30px; height: 30px;
+      background: linear-gradient(135deg, var(--green), var(--green-light));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .footer-brand-desc { font-size: 13px; line-height: 1.7; max-width: 270px; margin-bottom: 20px; }
+    .footer-col-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 11px;
+      color: white; text-transform: uppercase;
+      letter-spacing: .09em; margin-bottom: 16px;
+    }
+    .footer-links { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+    .footer-links a { color: rgba(255,255,255,.45); text-decoration: none; font-size: 13px; transition: color .2s; }
+    .footer-links a:hover { color: white; }
+    .footer-bottom {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12px; flex-wrap: wrap; gap: 12px;
+    }
+    .footer-bottom-links { display: flex; gap: 20px; align-items: center; }
+    .footer-bottom-links a { color: rgba(255,255,255,.35); text-decoration: none; transition: color .2s; }
+    .footer-bottom-links a:hover { color: white; }
+
+    @media (max-width: 1024px) {
+      #site-nav { padding: 0 20px; }
+      .nav-links-desktop { display: none; }
+      .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+    }
+    @media (max-width: 640px) {
+      .site-footer { padding: 48px 20px 24px; }
+      .footer-grid { grid-template-columns: 1fr; gap: 24px; }
+      .footer-bottom { flex-direction: column; text-align: center; }
+    }
   </style>
+
+  {% block head %}{% endblock %}
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body>
 
-  <!-- Navigation -->
-  <header class="bg-navy-800 shadow-md" style="background-color:#162d4a;">
-    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-      <a href="/" class="flex items-center gap-3">
-        <!-- Logo placeholder -->
-        <div class="w-10 h-10 bg-blue-400 rounded-lg flex items-center justify-center text-white font-bold text-lg">C</div>
-        <div>
-          <span class="text-white font-bold text-lg leading-tight block">Cabinets-Comptables</span>
-          <span class="text-blue-300 text-xs">.name — Annuaire national</span>
-        </div>
-      </a>
+  <!-- ── Navigation ── -->
+  <header id="site-nav">
+    <a href="/" class="nav-logo">
+      <div class="nav-logo-icon">📊</div>
+      <div class="nav-logo-text">Cabinets-Comptables<span>.name</span></div>
+    </a>
 
-      <!-- Desktop nav -->
-      <nav class="hidden md:flex items-center gap-6 text-sm">
-        <a href="/" class="text-blue-200 hover:text-white transition">Accueil</a>
-        <a href="/villes/" class="text-blue-200 hover:text-white transition">Villes</a>
-        <a href="/blog/" class="text-blue-200 hover:text-white transition">Blog</a>
-        <a href="/contact/" class="text-blue-200 hover:text-white transition">Contact</a>
-      </nav>
+    <ul class="nav-links-desktop">
+      <li><a href="/villes/">Villes</a></li>
+      <li><a href="/blog/">Blog</a></li>
+      <li><a href="/contact/">Contact</a></li>
+    </ul>
 
-      <!-- Mobile hamburger button -->
-      <button id="mobile-menu-btn"
-              class="md:hidden text-white p-2 rounded-lg hover:bg-blue-800 transition"
-              aria-label="Ouvrir le menu"
-              aria-expanded="false"
-              aria-controls="mobile-menu">
-        <svg id="icon-open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
-        <svg id="icon-close" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
+    <div class="hidden md:flex items-center gap-2">
+      <a href="/villes/" class="btn-nav-primary">Trouver un comptable</a>
     </div>
 
-    <!-- Mobile menu panel -->
-    <div id="mobile-menu" class="hidden md:hidden border-t border-blue-900" style="background-color:#0f1f33;">
-      <nav class="max-w-6xl mx-auto px-4 py-3 flex flex-col">
-        <a href="/" class="text-blue-200 hover:text-white hover:bg-blue-800 transition rounded-lg px-3 py-3 text-sm font-medium">Accueil</a>
-        <a href="/villes/" class="text-blue-200 hover:text-white hover:bg-blue-800 transition rounded-lg px-3 py-3 text-sm font-medium">Toutes les villes</a>
-        <a href="/blog/" class="text-blue-200 hover:text-white hover:bg-blue-800 transition rounded-lg px-3 py-3 text-sm font-medium">Blog</a>
-        <a href="/contact/" class="text-blue-200 hover:text-white hover:bg-blue-800 transition rounded-lg px-3 py-3 text-sm font-medium">Contact</a>
-      </nav>
-    </div>
+    <!-- Mobile hamburger -->
+    <button id="mobile-menu-btn"
+            class="md:hidden p-2 rounded-lg transition"
+            style="color: var(--ink-muted);"
+            aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="mobile-menu">
+      <svg id="icon-open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+      <svg id="icon-close" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
   </header>
+
+  <!-- Mobile menu -->
+  <div id="mobile-menu" class="hidden md:hidden border-b" style="background:var(--cream);border-color:var(--border);">
+    <nav class="px-5 py-3 flex flex-col">
+      <a href="/villes/" class="py-3 px-2 text-sm font-medium border-b" style="color:var(--ink-muted);border-color:var(--border);">Toutes les villes</a>
+      <a href="/blog/"   class="py-3 px-2 text-sm font-medium border-b" style="color:var(--ink-muted);border-color:var(--border);">Blog</a>
+      <a href="/contact/" class="py-3 px-2 text-sm font-medium"          style="color:var(--ink-muted);">Contact</a>
+      <a href="/villes/" class="mt-3 mb-2 text-center py-2.5 rounded-xl text-sm font-semibold text-white"
+         style="background:var(--green);">Trouver un comptable</a>
+    </nav>
+  </div>
 
   <!-- ADSENSE_SLOT_HEADER_BANNER -->
 
-  <main class="max-w-6xl mx-auto px-4 py-8">
+  <main class="{% block main_class %}max-w-6xl mx-auto px-4 py-8{% endblock %}">
     {% block content %}{% endblock %}
   </main>
 
-  <!-- Footer -->
-  <footer class="mt-16 border-t border-gray-200 bg-white">
-    <div class="max-w-6xl mx-auto px-4 py-10">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+  <!-- ── Footer ── -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-grid">
         <div>
-          <h3 class="font-bold text-gray-900 mb-3">Cabinets-Comptables.name</h3>
-          <p class="text-sm text-gray-500">
+          <div class="footer-brand-name">
+            <div class="footer-brand-icon">📊</div>
+            Cabinets-Comptables.name
+          </div>
+          <p class="footer-brand-desc">
             Annuaire national des cabinets d'expertise comptable en France.
-            Trouvez rapidement un expert-comptable près de chez vous.
+            Trouvez rapidement un expert-comptable adapté à votre situation.
           </p>
         </div>
         <div>
-          <h3 class="font-bold text-gray-900 mb-3">Grandes villes</h3>
-          <ul class="text-sm text-gray-500 space-y-1">
-            <li><a href="/villes/paris/" class="hover:text-blue-600">Cabinets comptables Paris</a></li>
-            <li><a href="/villes/lyon/" class="hover:text-blue-600">Cabinets comptables Lyon</a></li>
-            <li><a href="/villes/marseille/" class="hover:text-blue-600">Cabinets comptables Marseille</a></li>
-            <li><a href="/villes/bordeaux/" class="hover:text-blue-600">Cabinets comptables Bordeaux</a></li>
-            <li><a href="/villes/toulouse/" class="hover:text-blue-600">Cabinets comptables Toulouse</a></li>
+          <div class="footer-col-title">Grandes villes</div>
+          <ul class="footer-links">
+            <li><a href="/villes/paris/">Paris</a></li>
+            <li><a href="/villes/lyon/">Lyon</a></li>
+            <li><a href="/villes/marseille/">Marseille</a></li>
+            <li><a href="/villes/bordeaux/">Bordeaux</a></li>
+            <li><a href="/villes/toulouse/">Toulouse</a></li>
+            <li><a href="/villes/">Toutes les villes →</a></li>
           </ul>
         </div>
         <div>
-          <h3 class="font-bold text-gray-900 mb-3">Informations</h3>
-          <ul class="text-sm text-gray-500 space-y-1">
-            <li><a href="/blog/" class="hover:text-blue-600">Blog comptabilité</a></li>
-            <li><a href="/mentions-legales/" class="hover:text-blue-600">Mentions légales</a></li>
-            <li><a href="/politique-de-confidentialite/" class="hover:text-blue-600">Politique de confidentialité</a></li>
-            <li><a href="/contact/" class="hover:text-blue-600">Contact</a></li>
-            <li><a href="/sitemap.xml" class="hover:text-blue-600">Sitemap</a></li>
+          <div class="footer-col-title">Ressources</div>
+          <ul class="footer-links">
+            <li><a href="/blog/">Blog comptabilité</a></li>
+            <li><a href="/contact/">Contact</a></li>
+            <li><a href="/villes/">Annuaire par ville</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-col-title">Informations</div>
+          <ul class="footer-links">
+            <li><a href="/mentions-legales/">Mentions légales</a></li>
+            <li><a href="/politique-de-confidentialite/">Confidentialité</a></li>
+            <li><a href="/sitemap.xml">Sitemap</a></li>
           </ul>
         </div>
       </div>
-      <div class="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <p class="text-xs text-gray-400">
-          © 2025 Cabinets-Comptables.name — Annuaire non officiel à titre informatif.
-          Les données proviennent de sources publiques.
-        </p>
-        <button onclick="openCookiePreferences()"
-                class="text-xs text-gray-400 hover:text-blue-600 transition underline underline-offset-2 flex-shrink-0"
-                aria-label="Gérer mes préférences cookies">
-          Gérer les cookies
-        </button>
+      <div class="footer-bottom">
+        <span>© 2025 Cabinets-Comptables.name — Annuaire non officiel à titre informatif.</span>
+        <div class="footer-bottom-links">
+          <a href="/mentions-legales/">Mentions légales</a>
+          <a href="/politique-de-confidentialite/">Confidentialité</a>
+          <button onclick="openCookiePreferences()"
+                  style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.35);font-size:12px;padding:0;transition:color .2s;"
+                  onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,.35)'">
+            Cookies
+          </button>
+        </div>
       </div>
     </div>
   </footer>
 
   <!-- ADSENSE_SLOT_FOOTER -->
 
-  <!-- Mobile menu toggle script -->
   <script>
     (function () {
+      // Mobile menu toggle
       var btn  = document.getElementById('mobile-menu-btn');
       var menu = document.getElementById('mobile-menu');
       var iconOpen  = document.getElementById('icon-open');
       var iconClose = document.getElementById('icon-close');
-      btn.addEventListener('click', function () {
-        var isOpen = !menu.classList.contains('hidden');
-        menu.classList.toggle('hidden', isOpen);
-        iconOpen.classList.toggle('hidden', !isOpen);
-        iconClose.classList.toggle('hidden', isOpen);
-        btn.setAttribute('aria-expanded', String(!isOpen));
-      });
+      if (btn) {
+        btn.addEventListener('click', function () {
+          var isOpen = !menu.classList.contains('hidden');
+          menu.classList.toggle('hidden', isOpen);
+          iconOpen.classList.toggle('hidden', !isOpen);
+          iconClose.classList.toggle('hidden', isOpen);
+          btn.setAttribute('aria-expanded', String(!isOpen));
+        });
+      }
+      // Nav scroll shadow
+      var nav = document.getElementById('site-nav');
+      if (nav) {
+        window.addEventListener('scroll', function () {
+          nav.classList.toggle('scrolled', window.scrollY > 10);
+        }, { passive: true });
+      }
     })();
   </script>
 
