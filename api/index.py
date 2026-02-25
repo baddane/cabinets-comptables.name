@@ -21,16 +21,20 @@ import base64
 import hashlib
 import json
 import os
+import re
 import secrets
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from urllib.parse import quote_plus
 
 import httpx
 from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from itsdangerous import BadSignature, SignatureExpired, TimestampSigner
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from slugify import slugify
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -325,6 +329,153 @@ def data_stats(cabinets: list[dict]) -> dict:
         "gps": gps,         "pct_gps":    round(gps     / n * 100) if n else 0,
         "websites": webs,   "pct_web":    round(webs    / n * 100) if n else 0,
     }
+
+
+# ─── Supabase — données dynamiques ────────────────────────────────────────────
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_ANON_KEY", "")
+
+GENERATOR_TEMPLATE_DIR = ROOT / "generator" / "templates"
+
+_CITY_COLORS = [
+    "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
+    "#06b6d4", "#84cc16", "#f97316", "#ec4899", "#14b8a6",
+    "#6366f1", "#a855f7", "#0ea5e9", "#22c55e", "#eab308",
+    "#f43f5e", "#64748b", "#2dd4bf", "#fb923c", "#a3e635",
+]
+
+_pub_env: Optional[Environment] = None
+
+
+def _get_pub_env() -> Environment:
+    global _pub_env
+    if _pub_env is None:
+        _pub_env = Environment(
+            loader=FileSystemLoader(str(GENERATOR_TEMPLATE_DIR)),
+            autoescape=select_autoescape(["html", "xml"]),
+        )
+        _pub_env.filters["urlencode"] = quote_plus
+    return _pub_env
+
+
+def _parse_address_dyn(address_full: str) -> tuple:
+    if not address_full:
+        return ("", "", "")
+    m = re.search(r",?\s*(\d{5})\s+(.+?)$", address_full)
+    if m:
+        street = address_full[: m.start()].rstrip(", ")
+        return (street, m.group(1), m.group(2).strip())
+    return (address_full, "", "")
+
+
+def _map_supabase_row_dyn(row: dict) -> dict:
+    street, postal_code, city = _parse_address_dyn(row.get("address") or "")
+    rating_raw = row.get("rating")
+    lat = row.get("latitude")
+    lng = row.get("longitude")
+    return {
+        "name": row.get("name") or "",
+        "address": street,
+        "city": city,
+        "postal_code": postal_code,
+        "phone": row.get("phone") or "",
+        "website": row.get("website") or "",
+        "rating": str(rating_raw) if rating_raw is not None else "",
+        "rating_info": row.get("rating_info") or "",
+        "category": row.get("category") or "",
+        "open_hours": row.get("open_hours") or "",
+        "lat": float(lat) if lat is not None else None,
+        "lng": float(lng) if lng is not None else None,
+        "featured_image": row.get("featured_image") or "",
+        "bing_maps_url": row.get("bing_maps_url") or "",
+        "email": row.get("emails") or "",
+        "facebook": row.get("facebook") or "",
+        "instagram": row.get("instagram") or "",
+        "twitter": row.get("twitter") or "",
+        "external_id": row.get("id") or "",
+    }
+
+
+# Cache en mémoire — TTL 30 min (partagé par instance Vercel, vide à chaque cold start)
+_supabase_cache: dict = {}
+_CACHE_TTL = 1800
+
+
+async def _fetch_supabase_all() -> list[dict]:
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return []
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Prefer": "count=exact",
+    }
+    all_rows: list[dict] = []
+    page_size = 1000
+    offset = 0
+    async with httpx.AsyncClient(timeout=30) as client:
+        while True:
+            url = (
+                f"{SUPABASE_URL}/rest/v1/comptables"
+                f"?select=*&order=id&offset={offset}&limit={page_size}"
+            )
+            r = await client.get(url, headers=headers)
+            r.raise_for_status()
+            rows = r.json()
+            if not rows:
+                break
+            all_rows.extend(rows)
+            if len(rows) < page_size:
+                break
+            offset += page_size
+    return all_rows
+
+
+async def _get_cabinet_index() -> dict:
+    """Retourne l'index des cabinets (depuis le cache ou depuis Supabase)."""
+    now = time.time()
+    if _supabase_cache.get("expires_at", 0) > now:
+        return _supabase_cache
+
+    rows = await _fetch_supabase_all()
+    cabinets: list[dict] = []
+    used_slugs: dict[str, int] = {}
+
+    for row in rows:
+        mapped = _map_supabase_row_dyn(row)
+        if not mapped.get("city") or not mapped.get("name"):
+            continue
+        base = slugify(f"{mapped['name']}-{mapped['city']}")
+        if base in used_slugs:
+            used_slugs[base] += 1
+            mapped["slug"] = f"{base}-{used_slugs[base]}"
+        else:
+            used_slugs[base] = 1
+            mapped["slug"] = base
+        cabinets.append(mapped)
+
+    by_slug = {c["slug"]: c for c in cabinets}
+
+    by_city_slug: dict[str, list[dict]] = {}
+    for cab in cabinets:
+        cs = slugify(cab["city"])
+        by_city_slug.setdefault(cs, []).append(cab)
+
+    cities = sorted(
+        [
+            {"name": cabs[0]["city"], "slug": cs, "count": len(cabs)}
+            for cs, cabs in by_city_slug.items()
+        ],
+        key=lambda c: -c["count"],
+    )
+
+    _supabase_cache.update({
+        "by_slug": by_slug,
+        "by_city_slug": by_city_slug,
+        "cities": cities,
+        "expires_at": now + _CACHE_TTL,
+    })
+    return _supabase_cache
 
 
 # ─── Application ──────────────────────────────────────────────────────────────
@@ -910,3 +1061,40 @@ async def outils_enrich(
         f"/admin/outils?enriched={enriched}&processed={len(batch_idx)}&remaining={remaining_after}",
         303,
     )
+
+
+# ─── Routes publiques — pages dynamiques Supabase ─────────────────────────────
+
+@app.get("/villes/{city_slug}", response_class=HTMLResponse)
+async def ville_page(city_slug: str):
+    idx = await _get_cabinet_index()
+    city_cabs = idx["by_city_slug"].get(city_slug)
+    if not city_cabs:
+        raise HTTPException(status_code=404, detail="Ville introuvable")
+    city_name = city_cabs[0]["city"]
+    other_cities = [c for c in idx["cities"] if c["slug"] != city_slug][:10]
+    html = _get_pub_env().get_template("ville.html").render(
+        city_name=city_name,
+        city_slug=city_slug,
+        city_count=len(city_cabs),
+        cabinets=city_cabs,
+        other_cities=other_cities,
+    )
+    return HTMLResponse(html, headers={"Cache-Control": "public, max-age=3600, s-maxage=3600"})
+
+
+@app.get("/cabinets/{cabinet_slug}", response_class=HTMLResponse)
+async def cabinet_page(cabinet_slug: str):
+    idx = await _get_cabinet_index()
+    cabinet = idx["by_slug"].get(cabinet_slug)
+    if not cabinet:
+        raise HTTPException(status_code=404, detail="Cabinet introuvable")
+    city_slug = slugify(cabinet["city"])
+    city_cabs = idx["by_city_slug"].get(city_slug, [])
+    nearby = [c for c in city_cabs if c["slug"] != cabinet_slug][:5]
+    html = _get_pub_env().get_template("cabinet.html").render(
+        cabinet=cabinet,
+        city_slug=city_slug,
+        nearby_cabinets=nearby,
+    )
+    return HTMLResponse(html, headers={"Cache-Control": "public, max-age=3600, s-maxage=3600"})

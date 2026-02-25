@@ -681,8 +681,8 @@ def main():
     log.info("3. Génération des pages...")
     generate_homepage(env, cities, data, blog_posts)
     generate_villes_index(env, cities, data)
-    generate_city_pages(env, cities_grouped, cities)
-    generate_cabinet_pages(env, data, cities_grouped)
+    # Les pages /villes/{slug}/ et /cabinets/{slug}/ sont désormais servies
+    # dynamiquement par api/index.py (requête Supabase à la demande).
     generate_search_index(data, cities)
     generate_sitemap(env, data, cities, blog_posts)
     generate_robots(OUTPUT_DIR)
@@ -697,8 +697,8 @@ def main():
     total_html = sum(1 for _ in OUTPUT_DIR.rglob("*.html"))
     log.info("\n=== Génération terminée ===")
     log.info(f"  📄 {total_html} fichiers HTML générés")
-    log.info(f"  🏙️  {len(cities)} pages villes")
-    log.info(f"  🏢  {len(data)} pages cabinets")
+    log.info(f"  🏙️  {len(cities)} villes indexées (pages servies dynamiquement)")
+    log.info(f"  🏢  {len(data)} cabinets indexés (pages servies dynamiquement)")
     log.info(f"  📝  {len(blog_posts)} articles blog")
     log.info(f"  📁 Dossier de sortie : {OUTPUT_DIR}")
     log.info("\n  🚀 Pour déployer sur Vercel :")
