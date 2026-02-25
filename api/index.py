@@ -583,14 +583,29 @@ async def logout():
 @app.get("/admin/", response_class=HTMLResponse)
 @app.get("/admin", response_class=HTMLResponse)
 async def dashboard(request: Request, user: str = Depends(_require_auth)):
-    cabinets = load_data()
-    stats    = data_stats(cabinets)
-    github_ok = bool(GITHUB_TOKEN and GITHUB_REPO)
+    cabinets    = load_data()
+    stats       = data_stats(cabinets)
+    github_ok   = bool(GITHUB_TOKEN and GITHUB_REPO)
+    supabase_ok = bool(SUPABASE_URL and SUPABASE_KEY)
+
+    supabase_total  = 0
+    supabase_cities = 0
+    if supabase_ok:
+        try:
+            idx = await _get_cabinet_index()
+            supabase_total  = len(idx.get("by_slug", {}))
+            supabase_cities = len(idx.get("by_city_slug", {}))
+        except Exception:
+            pass
+
     return templates.TemplateResponse("dashboard.html", {
         "request": request, "user": user,
         "stats": stats, "last_gen": None,
         "tasks": {},
-        "github_ok": github_ok,
+        "github_ok":       github_ok,
+        "supabase_ok":     supabase_ok,
+        "supabase_total":  supabase_total,
+        "supabase_cities": supabase_cities,
     })
 
 
@@ -604,7 +619,21 @@ async def cabinets_list(
     city: str = "",
     page: int = 1,
 ):
-    cabinets = load_data()
+    all_data   = load_data()
+    all_cities = sorted({c.get("city", "") for c in all_data if c.get("city")})
+
+    # Calcule les slugs sur la liste complète (l'ordre global détermine les doublons)
+    used: dict[str, int] = {}
+    for cab in all_data:
+        base = slugify(f"{cab.get('name', '')}-{cab.get('city', '')}")
+        if base in used:
+            used[base] += 1
+            cab["slug"] = f"{base}-{used[base]}"
+        else:
+            used[base] = 1
+            cab["slug"] = base
+
+    cabinets = all_data
     if q:
         ql = q.lower()
         cabinets = [c for c in cabinets if ql in c.get("name", "").lower()
@@ -620,9 +649,6 @@ async def cabinets_list(
     pages     = max(1, (total + per_page - 1) // per_page)
     page      = max(1, min(page, pages))
     sliced    = cabinets[(page - 1) * per_page: page * per_page]
-
-    all_data   = load_data()
-    all_cities = sorted({c.get("city", "") for c in all_data if c.get("city")})
 
     return templates.TemplateResponse("cabinets.html", {
         "request": request, "user": user,

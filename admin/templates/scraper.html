@@ -153,20 +153,36 @@
       <div>
         <h2 class="font-semibold text-slate-800">Régénérer le site statique</h2>
         <p class="text-xs text-slate-500 mt-0.5">
-          Génère toutes les pages HTML à partir de data/cabinets.json.
-          {% if not vercel_mode %}Durée : ~10–30 secondes.{% endif %}
+          Génère l'accueil, l'index des villes, le blog et le sitemap.
+          {% if not vercel_mode %}Les pages cabinets/villes sont dynamiques (Supabase).{% endif %}
         </p>
       </div>
       {% if not vercel_mode %}{{ task_badge("generate") }}{% endif %}
     </div>
 
     {% if vercel_mode %}
-    <div class="px-6 py-5">
+    <div class="px-6 py-5 space-y-3">
       <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
         <strong>Automatique.</strong>
-        Chaque commit sur GitHub (ajout cabinet, article de blog, enrichissement…)
-        déclenche automatiquement un redéploiement Vercel qui régénère toutes les pages.
-        Aucune action manuelle nécessaire.
+        Chaque commit sur GitHub déclenche un redéploiement Vercel qui régénère
+        les pages statiques (accueil, blog, sitemap).
+        Les pages <code class="bg-blue-100 px-1 rounded">/villes/{slug}</code> et
+        <code class="bg-blue-100 px-1 rounded">/cabinets/{slug}</code> sont servies
+        <strong>dynamiquement depuis Supabase</strong> — aucune génération nécessaire.
+      </div>
+      <div class="flex flex-wrap gap-2 text-xs text-slate-500">
+        <span class="inline-flex items-center gap-1 bg-slate-100 rounded px-2 py-1">
+          <span class="text-emerald-500">●</span> Accueil — statique
+        </span>
+        <span class="inline-flex items-center gap-1 bg-slate-100 rounded px-2 py-1">
+          <span class="text-emerald-500">●</span> Blog — statique
+        </span>
+        <span class="inline-flex items-center gap-1 bg-slate-100 rounded px-2 py-1">
+          <span class="text-blue-500">●</span> /villes/{slug} — dynamique Supabase
+        </span>
+        <span class="inline-flex items-center gap-1 bg-slate-100 rounded px-2 py-1">
+          <span class="text-blue-500">●</span> /cabinets/{slug} — dynamique Supabase
+        </span>
       </div>
     </div>
     {% else %}
