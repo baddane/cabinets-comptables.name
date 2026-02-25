@@ -125,7 +125,17 @@
             {% endif %}
           </td>
           <td class="px-4 py-3">
-            <div class="flex items-center justify-end gap-2">
+            <div class="flex items-center justify-end gap-1">
+              {% if cab.slug %}
+              <a href="/cabinets/{{ cab.slug }}/" target="_blank"
+                 title="Voir la page publique"
+                 class="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+              </a>
+              {% endif %}
               <a href="/admin/cabinets/{{ idx }}/edit"
                  class="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 hover:bg-blue-50 rounded transition-colors">
                 Modifier

@@ -18,22 +18,23 @@ Variables à définir dans Vercel Dashboard → Settings → Environment Variabl
 
 import asyncio
 import base64
-import csv
 import hashlib
-import io
 import json
 import os
 import re
 import secrets
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from urllib.parse import quote_plus
 
 import httpx
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, status
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from itsdangerous import BadSignature, SignatureExpired, TimestampSigner
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from slugify import slugify
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -330,6 +331,153 @@ def data_stats(cabinets: list[dict]) -> dict:
     }
 
 
+# ─── Supabase — données dynamiques ────────────────────────────────────────────
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_ANON_KEY", "")
+
+GENERATOR_TEMPLATE_DIR = ROOT / "generator" / "templates"
+
+_CITY_COLORS = [
+    "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
+    "#06b6d4", "#84cc16", "#f97316", "#ec4899", "#14b8a6",
+    "#6366f1", "#a855f7", "#0ea5e9", "#22c55e", "#eab308",
+    "#f43f5e", "#64748b", "#2dd4bf", "#fb923c", "#a3e635",
+]
+
+_pub_env: Optional[Environment] = None
+
+
+def _get_pub_env() -> Environment:
+    global _pub_env
+    if _pub_env is None:
+        _pub_env = Environment(
+            loader=FileSystemLoader(str(GENERATOR_TEMPLATE_DIR)),
+            autoescape=select_autoescape(["html", "xml"]),
+        )
+        _pub_env.filters["urlencode"] = quote_plus
+    return _pub_env
+
+
+def _parse_address_dyn(address_full: str) -> tuple:
+    if not address_full:
+        return ("", "", "")
+    m = re.search(r",?\s*(\d{5})\s+(.+?)$", address_full)
+    if m:
+        street = address_full[: m.start()].rstrip(", ")
+        return (street, m.group(1), m.group(2).strip())
+    return (address_full, "", "")
+
+
+def _map_supabase_row_dyn(row: dict) -> dict:
+    street, postal_code, city = _parse_address_dyn(row.get("address") or "")
+    rating_raw = row.get("rating")
+    lat = row.get("latitude")
+    lng = row.get("longitude")
+    return {
+        "name": row.get("name") or "",
+        "address": street,
+        "city": city,
+        "postal_code": postal_code,
+        "phone": row.get("phone") or "",
+        "website": row.get("website") or "",
+        "rating": str(rating_raw) if rating_raw is not None else "",
+        "rating_info": row.get("rating_info") or "",
+        "category": row.get("category") or "",
+        "open_hours": row.get("open_hours") or "",
+        "lat": float(lat) if lat is not None else None,
+        "lng": float(lng) if lng is not None else None,
+        "featured_image": row.get("featured_image") or "",
+        "bing_maps_url": row.get("bing_maps_url") or "",
+        "email": row.get("emails") or "",
+        "facebook": row.get("facebook") or "",
+        "instagram": row.get("instagram") or "",
+        "twitter": row.get("twitter") or "",
+        "external_id": row.get("id") or "",
+    }
+
+
+# Cache en mémoire — TTL 30 min (partagé par instance Vercel, vide à chaque cold start)
+_supabase_cache: dict = {}
+_CACHE_TTL = 1800
+
+
+async def _fetch_supabase_all() -> list[dict]:
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return []
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Prefer": "count=exact",
+    }
+    all_rows: list[dict] = []
+    page_size = 1000
+    offset = 0
+    async with httpx.AsyncClient(timeout=30) as client:
+        while True:
+            url = (
+                f"{SUPABASE_URL}/rest/v1/comptables"
+                f"?select=*&order=id&offset={offset}&limit={page_size}"
+            )
+            r = await client.get(url, headers=headers)
+            r.raise_for_status()
+            rows = r.json()
+            if not rows:
+                break
+            all_rows.extend(rows)
+            if len(rows) < page_size:
+                break
+            offset += page_size
+    return all_rows
+
+
+async def _get_cabinet_index() -> dict:
+    """Retourne l'index des cabinets (depuis le cache ou depuis Supabase)."""
+    now = time.time()
+    if _supabase_cache.get("expires_at", 0) > now:
+        return _supabase_cache
+
+    rows = await _fetch_supabase_all()
+    cabinets: list[dict] = []
+    used_slugs: dict[str, int] = {}
+
+    for row in rows:
+        mapped = _map_supabase_row_dyn(row)
+        if not mapped.get("city") or not mapped.get("name"):
+            continue
+        base = slugify(f"{mapped['name']}-{mapped['city']}")
+        if base in used_slugs:
+            used_slugs[base] += 1
+            mapped["slug"] = f"{base}-{used_slugs[base]}"
+        else:
+            used_slugs[base] = 1
+            mapped["slug"] = base
+        cabinets.append(mapped)
+
+    by_slug = {c["slug"]: c for c in cabinets}
+
+    by_city_slug: dict[str, list[dict]] = {}
+    for cab in cabinets:
+        cs = slugify(cab["city"])
+        by_city_slug.setdefault(cs, []).append(cab)
+
+    cities = sorted(
+        [
+            {"name": cabs[0]["city"], "slug": cs, "count": len(cabs)}
+            for cs, cabs in by_city_slug.items()
+        ],
+        key=lambda c: -c["count"],
+    )
+
+    _supabase_cache.update({
+        "by_slug": by_slug,
+        "by_city_slug": by_city_slug,
+        "cities": cities,
+        "expires_at": now + _CACHE_TTL,
+    })
+    return _supabase_cache
+
+
 # ─── Application ──────────────────────────────────────────────────────────────
 
 app = FastAPI(docs_url=None, redoc_url=None)
@@ -435,14 +583,29 @@ async def logout():
 @app.get("/admin/", response_class=HTMLResponse)
 @app.get("/admin", response_class=HTMLResponse)
 async def dashboard(request: Request, user: str = Depends(_require_auth)):
-    cabinets = load_data()
-    stats    = data_stats(cabinets)
-    github_ok = bool(GITHUB_TOKEN and GITHUB_REPO)
+    cabinets    = load_data()
+    stats       = data_stats(cabinets)
+    github_ok   = bool(GITHUB_TOKEN and GITHUB_REPO)
+    supabase_ok = bool(SUPABASE_URL and SUPABASE_KEY)
+
+    supabase_total  = 0
+    supabase_cities = 0
+    if supabase_ok:
+        try:
+            idx = await _get_cabinet_index()
+            supabase_total  = len(idx.get("by_slug", {}))
+            supabase_cities = len(idx.get("by_city_slug", {}))
+        except Exception:
+            pass
+
     return templates.TemplateResponse("dashboard.html", {
         "request": request, "user": user,
         "stats": stats, "last_gen": None,
         "tasks": {},
-        "github_ok": github_ok,
+        "github_ok":       github_ok,
+        "supabase_ok":     supabase_ok,
+        "supabase_total":  supabase_total,
+        "supabase_cities": supabase_cities,
     })
 
 
@@ -456,7 +619,21 @@ async def cabinets_list(
     city: str = "",
     page: int = 1,
 ):
-    cabinets = load_data()
+    all_data   = load_data()
+    all_cities = sorted({c.get("city", "") for c in all_data if c.get("city")})
+
+    # Calcule les slugs sur la liste complète (l'ordre global détermine les doublons)
+    used: dict[str, int] = {}
+    for cab in all_data:
+        base = slugify(f"{cab.get('name', '')}-{cab.get('city', '')}")
+        if base in used:
+            used[base] += 1
+            cab["slug"] = f"{base}-{used[base]}"
+        else:
+            used[base] = 1
+            cab["slug"] = base
+
+    cabinets = all_data
     if q:
         ql = q.lower()
         cabinets = [c for c in cabinets if ql in c.get("name", "").lower()
@@ -472,9 +649,6 @@ async def cabinets_list(
     pages     = max(1, (total + per_page - 1) // per_page)
     page      = max(1, min(page, pages))
     sliced    = cabinets[(page - 1) * per_page: page * per_page]
-
-    all_data   = load_data()
-    all_cities = sorted({c.get("city", "") for c in all_data if c.get("city")})
 
     return templates.TemplateResponse("cabinets.html", {
         "request": request, "user": user,
@@ -844,241 +1018,6 @@ async def password_change(
     })
 
 
-# ─── Routes : import CSV / Excel ─────────────────────────────────────────────
-
-IMPORT_COLUMNS = [
-    ("nom",          "name",          "Nom du cabinet (obligatoire)"),
-    ("adresse",      "address",       "Adresse complète (rue, code postal, ville)"),
-    ("ville",        "city",          "Ville — extraite automatiquement de l'adresse si absente"),
-    ("code_postal",  "postal_code",   "Code postal (ex : 75001)"),
-    ("telephone",    "phone",         "Numéro de téléphone"),
-    ("site_web",     "website",       "URL du site web"),
-    ("note",         "rating",        "Note (ex : 4.5)"),
-    ("nb_avis",      "reviews_count", "Nombre d'avis (entier)"),
-    ("note_info",    "rating_info",   "Source de la note (ex : Trustpilot (3966))"),
-    ("categorie",    "category",      "Catégorie (ex : Comptable)"),
-    ("horaires",     "open_hours",    "Horaires d'ouverture"),
-    ("latitude",     "lat",           "Latitude GPS (ex : 48.8566)"),
-    ("longitude",    "lng",           "Longitude GPS (ex : 2.3522)"),
-    ("image",        "featured_image","URL de l'image principale"),
-    ("bing_maps",    "bing_maps_url", "URL Bing Maps"),
-    ("email",        "email",         "Adresse e-mail de contact"),
-    ("facebook",     "facebook",      "URL de la page Facebook"),
-    ("instagram",    "instagram",     "URL du profil Instagram"),
-    ("twitter",      "twitter",       "URL du profil Twitter / X"),
-    ("id_externe",   "external_id",   "Identifiant externe (ex : ypid:...)"),
-]
-
-_COL_MAP: dict[str, str] = {}
-for _fr, _en, _ in IMPORT_COLUMNS:
-    _COL_MAP[_fr.lower()] = _en
-    _COL_MAP[_en.lower()] = _en
-
-# Noms anglais supplémentaires (exports Bing Maps / tiers)
-_COL_MAP.update({
-    "id":            "external_id",
-    "emails":        "email",
-    "social_medias": "social_medias",
-})
-
-_IMPORT_EXAMPLE = [
-    "Cabinet Dupont & Associés", "12 rue de la Paix, 75001 Paris", "Paris", "75001",
-    "01 23 45 67 89", "https://www.cabinet-dupont.fr", "4.5", "42",
-    "Google (42)", "Comptable", "Lun-Ven 09:00-18:00",
-    "48.8566", "2.3522", "", "", "contact@cabinet-dupont.fr",
-    "", "", "", "",
-]
-
-
-def _extract_city_from_address(address: str) -> tuple[str, str, str]:
-    """Extrait (rue, code_postal, ville) depuis une adresse française complète."""
-    m = re.search(r",?\s*(\d{4,5})\s+([^,\d]+?)\s*$", address.strip())
-    if m:
-        street = address[: m.start()].strip().rstrip(",").strip()
-        return street, m.group(1).strip(), m.group(2).strip()
-    return address, "", ""
-
-
-def _normalize_import_row(row: dict) -> dict | None:
-    out: dict = {}
-    for key, val in row.items():
-        field = _COL_MAP.get(key.strip().lower().replace(" ", "_"))
-        if field:
-            out[field] = str(val).strip() if val is not None else ""
-    if not out.get("name"):
-        return None
-    # Auto-extraction ville / code postal depuis adresse complète
-    if out.get("address") and not out.get("city"):
-        street, postal, city = _extract_city_from_address(out["address"])
-        if city:
-            out["address"] = street
-            if not out.get("postal_code"):
-                out["postal_code"] = postal
-            out["city"] = city
-    if not out.get("city"):
-        return None
-    # reviews_count depuis rating_info si absent ("Trustpilot (3966)" → 3966)
-    if not out.get("reviews_count") and out.get("rating_info"):
-        m = re.search(r"\((\d+)\)", out["rating_info"])
-        if m:
-            out["reviews_count"] = m.group(1)
-    try:
-        out["reviews_count"] = int(float(out.get("reviews_count") or 0))
-    except (ValueError, TypeError):
-        out["reviews_count"] = 0
-    for f in ("lat", "lng"):
-        v = str(out.get(f, "")).replace(",", ".")
-        try:
-            out[f] = float(v) if v else ""
-        except (ValueError, TypeError):
-            out[f] = ""
-    return out
-
-
-@app.get("/admin/import", response_class=HTMLResponse)
-async def import_page(request: Request, user: str = Depends(_require_auth)):
-    return templates.TemplateResponse("import.html", {
-        "request": request, "user": user,
-        "columns": IMPORT_COLUMNS, "result": None,
-    })
-
-
-@app.get("/admin/import/template.csv")
-async def import_template_csv(user: str = Depends(_require_auth)):
-    buf = io.StringIO()
-    w = csv.writer(buf)
-    w.writerow([c[0] for c in IMPORT_COLUMNS])
-    w.writerow(_IMPORT_EXAMPLE)
-    return StreamingResponse(
-        iter([buf.getvalue().encode("utf-8-sig")]),
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=modele_cabinets.csv"},
-    )
-
-
-@app.get("/admin/import/template.xlsx")
-async def import_template_xlsx(user: str = Depends(_require_auth)):
-    import openpyxl
-    from openpyxl.styles import Alignment, Font, PatternFill
-
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Cabinets"
-    for i, (col_name, _, _desc) in enumerate(IMPORT_COLUMNS, 1):
-        cell = ws.cell(row=1, column=i, value=col_name)
-        cell.font = Font(bold=True, color="FFFFFF")
-        cell.fill = PatternFill("solid", fgColor="1D4ED8")
-        cell.alignment = Alignment(horizontal="center")
-        ws.column_dimensions[cell.column_letter].width = max(16, len(col_name) + 4)
-    for i, val in enumerate(_IMPORT_EXAMPLE, 1):
-        ws.cell(row=2, column=i, value=val)
-    ws2 = wb.create_sheet("Description colonnes")
-    ws2.append(["Colonne", "Description"])
-    ws2["A1"].font = Font(bold=True)
-    ws2["B1"].font = Font(bold=True)
-    for col_name, _, desc in IMPORT_COLUMNS:
-        ws2.append([col_name, desc])
-    ws2.column_dimensions["A"].width = 20
-    ws2.column_dimensions["B"].width = 50
-
-    buf = io.BytesIO()
-    wb.save(buf)
-    buf.seek(0)
-    return StreamingResponse(
-        buf,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=modele_cabinets.xlsx"},
-    )
-
-
-@app.post("/admin/import", response_class=HTMLResponse)
-async def import_post(
-    request: Request,
-    user: str = Depends(_require_auth),
-    mode: str = Form("merge"),
-    file: UploadFile = File(...),
-):
-    filename = (file.filename or "").lower()
-    result: dict = {"added": 0, "updated": 0, "skipped": 0, "errors": [], "total": 0}
-    rows: list[dict] = []
-
-    content = await file.read()
-
-    if filename.endswith(".csv"):
-        for enc in ("utf-8-sig", "utf-8", "latin-1"):
-            try:
-                text = content.decode(enc)
-                rows = list(csv.DictReader(io.StringIO(text)))
-                break
-            except (UnicodeDecodeError, Exception):
-                continue
-        if not rows:
-            result["errors"].append("Impossible de lire le fichier CSV (encodage non reconnu).")
-    elif filename.endswith((".xlsx", ".xls")):
-        try:
-            import openpyxl
-            wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
-            ws = wb.active
-            raw_rows = list(ws.iter_rows(values_only=True))
-            if raw_rows:
-                headers = [str(h or "").strip() for h in raw_rows[0]]
-                for row in raw_rows[1:]:
-                    rows.append({headers[i]: (str(v) if v is not None else "")
-                                 for i, v in enumerate(row)})
-        except Exception as e:
-            result["errors"].append(f"Erreur lecture Excel : {e}")
-    else:
-        result["errors"].append("Format non supporté. Utilisez un fichier .csv ou .xlsx")
-
-    if rows:
-        cabinets = load_data() if mode == "merge" else []
-        idx_extid = {c.get("external_id", ""): i for i, c in enumerate(cabinets) if c.get("external_id")}
-        idx_name  = {
-            (c.get("name", "").lower(), c.get("city", "").lower()): i
-            for i, c in enumerate(cabinets)
-        }
-        for row_num, raw in enumerate(rows, 2):
-            if all(v in ("", "None", None) for v in raw.values()):
-                continue
-            result["total"] += 1
-            cab = _normalize_import_row(raw)
-            if cab is None:
-                result["errors"].append(f"Ligne {row_num} : nom ou ville manquant — ignorée")
-                result["skipped"] += 1
-                continue
-            if mode == "merge":
-                existing_idx = None
-                if cab.get("external_id") and cab["external_id"] in idx_extid:
-                    existing_idx = idx_extid[cab["external_id"]]
-                else:
-                    key = (cab["name"].lower(), cab["city"].lower())
-                    existing_idx = idx_name.get(key)
-                if existing_idx is not None:
-                    cabinets[existing_idx].update({k: v for k, v in cab.items() if v != ""})
-                    result["updated"] += 1
-                else:
-                    cabinets.append(cab)
-                    new_idx = len(cabinets) - 1
-                    if cab.get("external_id"):
-                        idx_extid[cab["external_id"]] = new_idx
-                    idx_name[(cab["name"].lower(), cab["city"].lower())] = new_idx
-                    result["added"] += 1
-            else:
-                cabinets.append(cab)
-                result["added"] += 1
-
-        data_content = json.dumps(cabinets, ensure_ascii=False, indent=2)
-        await _github_commit_file(
-            "data/cabinets.json", data_content,
-            f"admin: import CSV ({result['added']} ajoutés, {result['updated']} mis à jour)",
-        )
-
-    return templates.TemplateResponse("import.html", {
-        "request": request, "user": user,
-        "columns": IMPORT_COLUMNS, "result": result,
-    })
-
-
 # ─── API JSON ─────────────────────────────────────────────────────────────────
 
 @app.get("/admin/api/stats")
@@ -1148,3 +1087,40 @@ async def outils_enrich(
         f"/admin/outils?enriched={enriched}&processed={len(batch_idx)}&remaining={remaining_after}",
         303,
     )
+
+
+# ─── Routes publiques — pages dynamiques Supabase ─────────────────────────────
+
+@app.get("/villes/{city_slug}", response_class=HTMLResponse)
+async def ville_page(city_slug: str):
+    idx = await _get_cabinet_index()
+    city_cabs = idx["by_city_slug"].get(city_slug)
+    if not city_cabs:
+        raise HTTPException(status_code=404, detail="Ville introuvable")
+    city_name = city_cabs[0]["city"]
+    other_cities = [c for c in idx["cities"] if c["slug"] != city_slug][:10]
+    html = _get_pub_env().get_template("ville.html").render(
+        city_name=city_name,
+        city_slug=city_slug,
+        city_count=len(city_cabs),
+        cabinets=city_cabs,
+        other_cities=other_cities,
+    )
+    return HTMLResponse(html, headers={"Cache-Control": "public, max-age=3600, s-maxage=3600"})
+
+
+@app.get("/cabinets/{cabinet_slug}", response_class=HTMLResponse)
+async def cabinet_page(cabinet_slug: str):
+    idx = await _get_cabinet_index()
+    cabinet = idx["by_slug"].get(cabinet_slug)
+    if not cabinet:
+        raise HTTPException(status_code=404, detail="Cabinet introuvable")
+    city_slug = slugify(cabinet["city"])
+    city_cabs = idx["by_city_slug"].get(city_slug, [])
+    nearby = [c for c in city_cabs if c["slug"] != cabinet_slug][:5]
+    html = _get_pub_env().get_template("cabinet.html").render(
+        cabinet=cabinet,
+        city_slug=city_slug,
+        nearby_cabinets=nearby,
+    )
+    return HTMLResponse(html, headers={"Cache-Control": "public, max-age=3600, s-maxage=3600"})

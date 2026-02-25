@@ -13,8 +13,8 @@ build/
 # Données scrappées (peuvent être larges)
 # data/cabinets.json  # décommenter pour ne pas versionner les données
 
-# Output généré (décommenter si on préfère ne pas versionner)
-# output/
+# Output généré par le build (régénéré par Vercel à chaque déploiement)
+output/
 
 # Éditeurs
 .DS_Store

@@ -17,21 +17,17 @@ Déploiement Railway (public) :
 """
 
 import asyncio
-import csv
-import io
 import json
 import os
-import re
 import secrets
-import shutil
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 import uvicorn
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, status
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import hashlib
@@ -242,30 +238,6 @@ def _is_busy(task_id: str) -> bool:
     return _tasks.get(task_id, {}).get("status") == "running"
 
 
-# ─── Diagnostic public (temporaire) ──────────────────────────────────────────
-
-@app.get("/admin/diag", response_class=HTMLResponse)
-async def diag():
-    """Endpoint public temporaire — montre l'état de l'auth sans révéler les secrets."""
-    src = "ADMIN_PASSWORD (env)" if os.environ.get("ADMIN_PASSWORD") else \
-          "ADMIN_PASSWORD_HASH (env)" if os.environ.get("ADMIN_PASSWORD_HASH") else \
-          ".credentials (fichier)" if CREDS_FILE.exists() else \
-          "GÉNÉRÉ ALÉATOIREMENT (perdu au redémarrage)"
-    hash_ok = "$" in ADMIN_PASS_HASH if ADMIN_PASS_HASH else False
-    import sys as _sys
-    return f"""<!doctype html><html><body style="font-family:monospace;padding:2em">
-<h2>Diagnostic Auth</h2>
-<table border=1 cellpadding=6>
-<tr><td>Python</td><td>{_sys.version}</td></tr>
-<tr><td>ADMIN_USERNAME</td><td>{ADMIN_USERNAME}</td></tr>
-<tr><td>Source credentials</td><td>{src}</td></tr>
-<tr><td>Hash chargé ?</td><td>{"✅ Oui (format salt$hash)" if hash_ok else "❌ Non ou format invalide"}</td></tr>
-<tr><td>ANTHROPIC_KEY défini ?</td><td>{"✅" if ANTHROPIC_KEY else "❌"}</td></tr>
-</table>
-<p style="color:grey;font-size:0.8em">Supprimez cette route après diagnostic.</p>
-</body></html>"""
-
-
 # ─── Routes : auth ────────────────────────────────────────────────────────────
 
 @app.get("/admin/login", response_class=HTMLResponse)
@@ -353,9 +325,8 @@ async def cabinets_list(
     page      = max(1, min(page, pages))
     sliced    = cabinets[(page - 1) * per_page: page * per_page]
 
-    # Liste des villes pour filtre dropdown
-    all_data  = load_data()
-    all_cities = sorted({c.get("city", "") for c in all_data if c.get("city")})
+    # Liste des villes pour filtre dropdown (même jeu de données filtré en amont)
+    all_cities = sorted({c.get("city", "") for c in load_data() if c.get("city")})
 
     return templates.TemplateResponse("cabinets.html", {
         "request": request, "user": user,
@@ -518,6 +489,7 @@ async def outils_page(request: Request, user: str = Depends(_require_auth)):
         "request": request, "user": user,
         "tasks": _tasks,
         "google_key_ok": bool(GOOGLE_API_KEY),
+        "vercel_mode": False,
     })
 
 
@@ -840,267 +812,6 @@ async def blog_delete(request: Request, slug: str, user: str = Depends(_require_
     posts = [p for p in posts if p["slug"] != slug]
     save_blog(posts)
     return RedirectResponse("/admin/blog?deleted=1", 303)
-
-
-# ─── Import CSV / Excel ───────────────────────────────────────────────────────
-
-# Colonnes du fichier modèle : (nom_colonne_fr, champ_interne, description)
-IMPORT_COLUMNS = [
-    ("nom",          "name",          "Nom du cabinet (obligatoire)"),
-    ("adresse",      "address",       "Adresse complète (rue, code postal, ville)"),
-    ("ville",        "city",          "Ville — extraite automatiquement de l'adresse si absente"),
-    ("code_postal",  "postal_code",   "Code postal (ex : 75001)"),
-    ("telephone",    "phone",         "Numéro de téléphone"),
-    ("site_web",     "website",       "URL du site web"),
-    ("note",         "rating",        "Note (ex : 4.5)"),
-    ("nb_avis",      "reviews_count", "Nombre d'avis (entier)"),
-    ("note_info",    "rating_info",   "Source de la note (ex : Trustpilot (3966))"),
-    ("categorie",    "category",      "Catégorie (ex : Comptable)"),
-    ("horaires",     "open_hours",    "Horaires d'ouverture"),
-    ("latitude",     "lat",           "Latitude GPS (ex : 48.8566)"),
-    ("longitude",    "lng",           "Longitude GPS (ex : 2.3522)"),
-    ("image",        "featured_image","URL de l'image principale"),
-    ("bing_maps",    "bing_maps_url", "URL Bing Maps"),
-    ("email",        "email",         "Adresse e-mail de contact"),
-    ("facebook",     "facebook",      "URL de la page Facebook"),
-    ("instagram",    "instagram",     "URL du profil Instagram"),
-    ("twitter",      "twitter",       "URL du profil Twitter / X"),
-    ("id_externe",   "external_id",   "Identifiant externe (ex : ypid:...)"),
-]
-
-# Mapping flexible nom colonne → champ interne (FR et EN acceptés)
-_COL_MAP: dict[str, str] = {}
-for _fr, _en, _ in IMPORT_COLUMNS:
-    _COL_MAP[_fr.lower()] = _en
-    _COL_MAP[_en.lower()] = _en
-
-# Noms de colonnes anglais supplémentaires (exports Bing Maps / tiers)
-_COL_MAP.update({
-    "id":           "external_id",
-    "emails":       "email",
-    "social_medias":"social_medias",
-})
-
-_IMPORT_EXAMPLE = [
-    "Cabinet Dupont & Associés", "12 rue de la Paix, 75001 Paris", "Paris", "75001",
-    "01 23 45 67 89", "https://www.cabinet-dupont.fr", "4.5", "42",
-    "Google (42)", "Comptable", "Lun-Ven 09:00-18:00",
-    "48.8566", "2.3522", "", "", "contact@cabinet-dupont.fr",
-    "", "", "", "",
-]
-
-
-def _extract_city_from_address(address: str) -> tuple[str, str, str]:
-    """Essaie d'extraire (rue, code_postal, ville) depuis une adresse française complète.
-    Ex: '20 Rue d'athènes, 75009 Paris' → ('20 Rue d'athènes', '75009', 'Paris')
-    """
-    m = re.search(r",?\s*(\d{4,5})\s+([^,\d]+?)\s*$", address.strip())
-    if m:
-        street = address[: m.start()].strip().rstrip(",").strip()
-        return street, m.group(1).strip(), m.group(2).strip()
-    return address, "", ""
-
-
-def _normalize_import_row(row: dict) -> dict | None:
-    """Mappe les colonnes du fichier vers les champs internes. Retourne None si invalide."""
-    out: dict = {}
-    for key, val in row.items():
-        field = _COL_MAP.get(key.strip().lower().replace(" ", "_"))
-        if field:
-            out[field] = str(val).strip() if val is not None else ""
-
-    if not out.get("name"):
-        return None
-
-    # Auto-extraction ville / code postal depuis l'adresse si absent
-    if out.get("address") and not out.get("city"):
-        street, postal, city = _extract_city_from_address(out["address"])
-        if city:
-            out["address"] = street
-            if not out.get("postal_code"):
-                out["postal_code"] = postal
-            out["city"] = city
-
-    if not out.get("city"):
-        return None
-
-    # Nombre d'avis : depuis reviews_count ou extrait de rating_info "Trustpilot (3966)"
-    if not out.get("reviews_count") and out.get("rating_info"):
-        m = re.search(r"\((\d+)\)", out["rating_info"])
-        if m:
-            out["reviews_count"] = m.group(1)
-    try:
-        out["reviews_count"] = int(float(out.get("reviews_count") or 0))
-    except (ValueError, TypeError):
-        out["reviews_count"] = 0
-
-    for f in ("lat", "lng"):
-        v = out.get(f, "")
-        try:
-            out[f] = float(v) if v else ""
-        except (ValueError, TypeError):
-            out[f] = ""
-    return out
-
-
-@app.get("/admin/import", response_class=HTMLResponse)
-async def import_page(request: Request, user: str = Depends(_require_auth)):
-    return templates.TemplateResponse("import.html", {
-        "request": request, "user": user,
-        "columns": IMPORT_COLUMNS, "result": None,
-    })
-
-
-@app.get("/admin/import/template.csv")
-async def import_template_csv(user: str = Depends(_require_auth)):
-    buf = io.StringIO()
-    w = csv.writer(buf)
-    w.writerow([c[0] for c in IMPORT_COLUMNS])
-    w.writerow(_IMPORT_EXAMPLE)
-    return StreamingResponse(
-        iter([buf.getvalue().encode("utf-8-sig")]),
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=modele_cabinets.csv"},
-    )
-
-
-@app.get("/admin/import/template.xlsx")
-async def import_template_xlsx(user: str = Depends(_require_auth)):
-    import openpyxl
-    from openpyxl.styles import Alignment, Font, PatternFill
-
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Cabinets"
-
-    for i, (col_name, _, _desc) in enumerate(IMPORT_COLUMNS, 1):
-        cell = ws.cell(row=1, column=i, value=col_name)
-        cell.font = Font(bold=True, color="FFFFFF")
-        cell.fill = PatternFill("solid", fgColor="1D4ED8")
-        cell.alignment = Alignment(horizontal="center")
-        ws.column_dimensions[cell.column_letter].width = max(16, len(col_name) + 4)
-
-    for i, val in enumerate(_IMPORT_EXAMPLE, 1):
-        ws.cell(row=2, column=i, value=val)
-
-    # Onglet description
-    ws2 = wb.create_sheet("Description colonnes")
-    ws2.append(["Colonne", "Description"])
-    ws2["A1"].font = Font(bold=True)
-    ws2["B1"].font = Font(bold=True)
-    for col_name, _, desc in IMPORT_COLUMNS:
-        ws2.append([col_name, desc])
-    ws2.column_dimensions["A"].width = 20
-    ws2.column_dimensions["B"].width = 50
-
-    buf = io.BytesIO()
-    wb.save(buf)
-    buf.seek(0)
-    return StreamingResponse(
-        buf,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=modele_cabinets.xlsx"},
-    )
-
-
-@app.post("/admin/import", response_class=HTMLResponse)
-async def import_post(
-    request: Request,
-    user: str = Depends(_require_auth),
-    mode: str = Form("merge"),
-    file: UploadFile = File(...),
-):
-    filename = (file.filename or "").lower()
-    result: dict = {"added": 0, "updated": 0, "skipped": 0, "errors": [], "total": 0}
-    rows: list[dict] = []
-
-    content = await file.read()
-
-    # ── Lecture du fichier ───────────────────────────────────────────────────
-    if filename.endswith(".csv"):
-        for enc in ("utf-8-sig", "utf-8", "latin-1"):
-            try:
-                text = content.decode(enc)
-                rows = list(csv.DictReader(io.StringIO(text)))
-                break
-            except (UnicodeDecodeError, Exception):
-                continue
-        if not rows:
-            result["errors"].append("Impossible de lire le fichier CSV (encodage non reconnu).")
-
-    elif filename.endswith((".xlsx", ".xls")):
-        try:
-            import openpyxl
-            wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
-            ws = wb.active
-            raw_rows = list(ws.iter_rows(values_only=True))
-            if raw_rows:
-                headers = [str(h or "").strip() for h in raw_rows[0]]
-                for row in raw_rows[1:]:
-                    rows.append({headers[i]: (str(v) if v is not None else "") for i, v in enumerate(row)})
-        except Exception as e:
-            result["errors"].append(f"Erreur lecture Excel : {e}")
-    else:
-        result["errors"].append("Format non supporté. Utilisez un fichier .csv ou .xlsx")
-
-    # ── Traitement ───────────────────────────────────────────────────────────
-    if rows:
-        cabinets = load_data() if mode == "merge" else []
-
-        # Index pour fusion rapide
-        idx_extid = {c.get("external_id", ""): i for i, c in enumerate(cabinets) if c.get("external_id")}
-        idx_name  = {
-            (c.get("name", "").lower(), c.get("city", "").lower()): i
-            for i, c in enumerate(cabinets)
-        }
-
-        for row_num, raw in enumerate(rows, 2):
-            # Ignorer les lignes entièrement vides
-            if all(v in ("", "None", None) for v in raw.values()):
-                continue
-            result["total"] += 1
-
-            cab = _normalize_import_row(raw)
-            if cab is None:
-                result["errors"].append(f"Ligne {row_num} : nom ou ville manquant — ignorée")
-                result["skipped"] += 1
-                continue
-
-            if mode == "merge":
-                existing_idx = None
-                if cab.get("external_id") and cab["external_id"] in idx_extid:
-                    existing_idx = idx_extid[cab["external_id"]]
-                else:
-                    key = (cab["name"].lower(), cab["city"].lower())
-                    existing_idx = idx_name.get(key)
-
-                if existing_idx is not None:
-                    # Mise à jour : on n'écrase que les champs non vides
-                    cabinets[existing_idx].update({k: v for k, v in cab.items() if v != ""})
-                    result["updated"] += 1
-                else:
-                    cabinets.append(cab)
-                    # Mettre à jour les index
-                    new_idx = len(cabinets) - 1
-                    if cab.get("external_id"):
-                        idx_extid[cab["external_id"]] = new_idx
-                    idx_name[(cab["name"].lower(), cab["city"].lower())] = new_idx
-                    result["added"] += 1
-            else:
-                cabinets.append(cab)
-                result["added"] += 1
-
-        save_data(cabinets)
-        # Régénérer le site automatiquement en arrière-plan
-        log_file = LOGS_DIR / "generate.log"
-        asyncio.create_task(_run_script("generate", [sys.executable, "generator/generate.py"], log_file))
-
-    regen = bool(result and (result["added"] + result["updated"]) > 0)
-    return templates.TemplateResponse("import.html", {
-        "request": request, "user": user,
-        "columns": IMPORT_COLUMNS, "result": result,
-        "regen": regen,
-    })
 
 
 # ─── Redirects legacy (anciens URLs Vercel) ───────────────────────────────────

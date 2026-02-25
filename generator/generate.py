@@ -2,10 +2,12 @@
 """
 Générateur de site statique SEO pour cabinets-comptables.name
 Génère : homepage, pages villes, pages cabinets, sitemap, robots.txt
+Sources de données : cabinets.json (local) + Supabase (si configuré)
 """
 
 import json
 import logging
+import re
 import sys
 import os
 import shutil
@@ -15,6 +17,7 @@ from datetime import date
 try:
     from jinja2 import Environment, FileSystemLoader, select_autoescape
     from slugify import slugify
+    import requests
 except ImportError:
     print("Dépendances manquantes. Lancez: pip install -r requirements.txt")
     sys.exit(1)
@@ -66,23 +69,185 @@ def make_env() -> Environment:
     return env
 
 
+def load_from_supabase() -> list[dict]:
+    """Charge les cabinets depuis Supabase via l'API REST (PostgREST).
+
+    Variables d'environnement requises :
+      - SUPABASE_URL  : URL du projet (ex: https://xyz.supabase.co)
+      - SUPABASE_KEY  : clé anon/public (ou SUPABASE_ANON_KEY)
+
+    Gère la pagination automatiquement (Supabase limite à 1000 lignes).
+    """
+    url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    key = os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_ANON_KEY", "")
+
+    if not url or not key:
+        log.info("  Supabase non configuré (SUPABASE_URL / SUPABASE_KEY absents)")
+        return []
+
+    headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Prefer": "count=exact",
+    }
+
+    all_rows: list[dict] = []
+    page_size = 1000
+    offset = 0
+
+    try:
+        while True:
+            api_url = (
+                f"{url}/rest/v1/comptables"
+                f"?select=*&order=id&offset={offset}&limit={page_size}"
+            )
+            resp = requests.get(api_url, headers=headers, timeout=30)
+            resp.raise_for_status()
+            rows = resp.json()
+            if not rows:
+                break
+            all_rows.extend(rows)
+            if len(rows) < page_size:
+                break
+            offset += page_size
+
+        log.info(f"  Supabase : {len(all_rows)} cabinets chargés")
+    except Exception as exc:
+        log.warning(f"  Erreur Supabase ({exc}), utilisation des données locales uniquement")
+        return []
+
+    return all_rows
+
+
+def _parse_address(address_full: str) -> tuple[str, str, str]:
+    """Extrait (rue, code_postal, ville) depuis une adresse complète.
+
+    Formats reconnus :
+      "20 Rue d'Athènes, 75009 Paris"
+      "20 Rue d'Athènes 75009 Paris"
+    """
+    if not address_full:
+        return ("", "", "")
+
+    # Cherche un code postal français (5 chiffres) suivi du nom de ville
+    m = re.search(r",?\s*(\d{5})\s+(.+?)$", address_full)
+    if m:
+        street = address_full[: m.start()].rstrip(", ")
+        return (street, m.group(1), m.group(2).strip())
+
+    return (address_full, "", "")
+
+
+def map_supabase_row(row: dict) -> dict:
+    """Convertit une ligne Supabase vers le format cabinets.json."""
+    street, postal_code, city = _parse_address(row.get("address") or "")
+
+    rating_raw = row.get("rating")
+    rating = str(rating_raw) if rating_raw is not None else ""
+
+    lat = row.get("latitude")
+    lng = row.get("longitude")
+
+    return {
+        "name": row.get("name") or "",
+        "address": street,
+        "city": city,
+        "postal_code": postal_code,
+        "phone": row.get("phone") or "",
+        "website": row.get("website") or "",
+        "rating": rating,
+        "rating_info": row.get("rating_info") or "",
+        "category": row.get("category") or "",
+        "open_hours": row.get("open_hours") or "",
+        "lat": float(lat) if lat is not None else None,
+        "lng": float(lng) if lng is not None else None,
+        "featured_image": row.get("featured_image") or "",
+        "bing_maps_url": row.get("bing_maps_url") or "",
+        "email": row.get("emails") or "",
+        "facebook": row.get("facebook") or "",
+        "instagram": row.get("instagram") or "",
+        "twitter": row.get("twitter") or "",
+        "external_id": row.get("id") or "",
+    }
+
+
+def merge_data(local: list[dict], supabase_rows: list[dict]) -> list[dict]:
+    """Fusionne données locales et Supabase sans écraser les données existantes.
+
+    Logique :
+      - Les cabinets existants dans le JSON local sont conservés tels quels.
+      - Pour un cabinet présent dans les deux sources (même external_id),
+        seuls les champs VIDES du local sont complétés par Supabase.
+      - Les cabinets uniquement dans Supabase sont ajoutés (s'ils ont une ville).
+    """
+    if not supabase_rows:
+        return local
+
+    # Indexer les données locales par external_id
+    local_by_id: dict[str, dict] = {}
+    for cab in local:
+        eid = cab.get("external_id", "")
+        if eid:
+            local_by_id[eid] = cab
+
+    added = 0
+    enriched = 0
+
+    for row in supabase_rows:
+        mapped = map_supabase_row(row)
+        eid = mapped.get("external_id", "")
+
+        if eid and eid in local_by_id:
+            # Cabinet existe localement — compléter les champs vides uniquement
+            existing = local_by_id[eid]
+            touched = False
+            for key, value in mapped.items():
+                if value and not existing.get(key):
+                    existing[key] = value
+                    touched = True
+            if touched:
+                enriched += 1
+        else:
+            # Nouveau cabinet depuis Supabase
+            if mapped.get("city") and mapped.get("name"):
+                local.append(mapped)
+                if eid:
+                    local_by_id[eid] = mapped
+                added += 1
+
+    log.info(
+        f"  Fusion : {added} nouveaux cabinets ajoutés, "
+        f"{enriched} cabinets existants enrichis"
+    )
+    return local
+
+
 def load_data() -> list[dict]:
-    if not DATA_FILE.exists():
-        log.error(
-            f"Fichier de données introuvable : {DATA_FILE}\n"
-            "Lancez d'abord : python scraper/scrape_pages_jaunes.py"
-        )
+    # Charger les données locales (cabinets.json)
+    local_data = []
+    if DATA_FILE.exists():
+        with open(DATA_FILE, encoding="utf-8") as f:
+            local_data = json.load(f)
+        log.info(f"  Fichier local : {len(local_data)} cabinets")
+    else:
+        log.warning(f"  Fichier local introuvable : {DATA_FILE}")
+
+    # Charger depuis Supabase (si configuré)
+    supabase_rows = load_from_supabase()
+
+    # Fusionner (les données locales ont priorité)
+    data = merge_data(local_data, supabase_rows)
+
+    if not data:
+        log.error("Aucune donnée disponible (ni locale, ni Supabase). Arrêt.")
         sys.exit(1)
 
-    with open(DATA_FILE, encoding="utf-8") as f:
-        data = json.load(f)
-
-    log.info(f"Données chargées : {len(data)} cabinets")
+    log.info(f"  Total après fusion : {len(data)} cabinets")
 
     # Ajouter le slug à chaque cabinet
     used_slugs = {}
     for cabinet in data:
-        base = slugify(f"{cabinet['name']}-{cabinet['city']}")
+        base = slugify(f"{cabinet['name']}-{cabinet.get('city', 'inconnu')}")
         if base in used_slugs:
             used_slugs[base] += 1
             cabinet["slug"] = f"{base}-{used_slugs[base]}"
@@ -516,8 +681,8 @@ def main():
     log.info("3. Génération des pages...")
     generate_homepage(env, cities, data, blog_posts)
     generate_villes_index(env, cities, data)
-    generate_city_pages(env, cities_grouped, cities)
-    generate_cabinet_pages(env, data, cities_grouped)
+    # Les pages /villes/{slug}/ et /cabinets/{slug}/ sont désormais servies
+    # dynamiquement par api/index.py (requête Supabase à la demande).
     generate_search_index(data, cities)
     generate_sitemap(env, data, cities, blog_posts)
     generate_robots(OUTPUT_DIR)
@@ -532,8 +697,8 @@ def main():
     total_html = sum(1 for _ in OUTPUT_DIR.rglob("*.html"))
     log.info("\n=== Génération terminée ===")
     log.info(f"  📄 {total_html} fichiers HTML générés")
-    log.info(f"  🏙️  {len(cities)} pages villes")
-    log.info(f"  🏢  {len(data)} pages cabinets")
+    log.info(f"  🏙️  {len(cities)} villes indexées (pages servies dynamiquement)")
+    log.info(f"  🏢  {len(data)} cabinets indexés (pages servies dynamiquement)")
     log.info(f"  📝  {len(blog_posts)} articles blog")
     log.info(f"  📁 Dossier de sortie : {OUTPUT_DIR}")
     log.info("\n  🚀 Pour déployer sur Vercel :")

@@ -1,4 +1,5 @@
 {
+  "buildCommand": "pip install --break-system-packages -r requirements.txt && python generator/generate.py",
   "outputDirectory": "output",
   "cleanUrls": true,
   "trailingSlash": false,
@@ -7,7 +8,7 @@
     "api/index.py": {
       "runtime": "@vercel/python@4.3.0",
       "maxDuration": 60,
-      "includeFiles": "data/**,admin/templates/**"
+      "includeFiles": "data/**,admin/templates/**,generator/templates/**"
     }
   },
 
@@ -18,6 +19,14 @@
     },
     {
       "source": "/admin",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/villes/:city_slug",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/cabinets/:cabinet_slug",
       "destination": "/api/index"
     }
   ],
