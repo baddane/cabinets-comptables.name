@@ -4,107 +4,156 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Admin{% endblock %} — Cabinets Comptables</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: { extend: { colors: { brand: '#1d4ed8' } } }
-    }
-  </script>
   <style>
+    /* ── Tokens ────────────────────────────────────────────────────────── */
+    :root {
+      --ag: #0a7c5c;          /* admin green */
+      --ag-light: #0d9e76;
+      --ag-pale: rgba(10,124,92,.1);
+      --ag-ring: rgba(10,124,92,.25);
+      --sidebar-bg: #0c1628;
+      --sidebar-border: rgba(255,255,255,.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'DM Sans', system-ui, sans-serif; }
+
     [x-cloak] { display: none !important; }
 
-    /* Lien sidebar de base */
+    /* ── Sidebar nav links ─────────────────────────────────────────────── */
     .nav-link {
       display: flex; align-items: center; gap: 10px;
       padding: 7px 12px; border-radius: 8px;
       font-size: 0.8125rem; font-weight: 500;
-      color: #94a3b8; /* slate-400 */
-      transition: background 0.15s, color 0.15s;
-      position: relative;
+      color: #94a3b8;
+      transition: background .15s, color .15s;
+      position: relative; text-decoration: none;
     }
-    .nav-link:hover {
-      background: rgba(148,163,184,.08);
-      color: #e2e8f0;
-    }
-    /* Lien actif : accent gauche + fond coloré */
-    .nav-link.active {
-      background: rgba(59,130,246,.15);
-      color: #93c5fd; /* blue-300 */
-    }
+    .nav-link:hover { background: rgba(148,163,184,.08); color: #e2e8f0; }
+
+    .nav-link.active { background: var(--ag-pale); color: #6ee7c4; }
     .nav-link.active::before {
       content: '';
       position: absolute; left: 0; top: 20%; bottom: 20%;
       width: 3px; border-radius: 0 3px 3px 0;
-      background: #3b82f6;
+      background: var(--ag);
     }
-    /* Icône dans un carré coloré quand actif */
     .nav-link .nav-icon {
       display: flex; align-items: center; justify-content: center;
       width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
-      background: transparent;
-      transition: background 0.15s;
+      background: transparent; transition: background .15s;
     }
-    .nav-link:hover .nav-icon {
-      background: rgba(148,163,184,.12);
-    }
-    .nav-link.active .nav-icon {
-      background: rgba(59,130,246,.2);
-    }
-    /* Section label */
+    .nav-link:hover .nav-icon { background: rgba(148,163,184,.12); }
+    .nav-link.active .nav-icon { background: rgba(10,124,92,.2); }
+
     .nav-section {
-      font-size: 0.65rem; font-weight: 700; letter-spacing: .08em;
-      text-transform: uppercase; color: #475569; /* slate-600 */
+      font-size: .65rem; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: #475569;
       padding: 0 12px; margin-top: 18px; margin-bottom: 4px;
       display: flex; align-items: center; gap: 6px;
     }
-    .nav-section::after {
-      content: ''; flex: 1; height: 1px; background: #1e293b;
+    .nav-section::after { content: ''; flex: 1; height: 1px; background: #1e293b; }
+
+    /* ── Global form inputs ────────────────────────────────────────────── */
+    .a-input, .a-select, .a-textarea {
+      width: 100%; padding: 9px 12px;
+      background: #f8fafc; border: 1.5px solid #e2e8f0;
+      border-radius: 8px; font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px; color: #1e293b; outline: none;
+      transition: border-color .2s, box-shadow .2s, background .2s;
     }
+    .a-input:focus, .a-select:focus, .a-textarea:focus {
+      border-color: var(--ag);
+      box-shadow: 0 0 0 3px var(--ag-ring);
+      background: white;
+    }
+    .a-textarea { resize: vertical; }
+    .a-label {
+      display: block; font-size: 12px; font-weight: 600;
+      color: #64748b; text-transform: uppercase; letter-spacing: .06em;
+      margin-bottom: 6px;
+    }
+
+    /* ── Badges & alerts ───────────────────────────────────────────────── */
+    .a-alert { display: flex; align-items: center; gap: 10px; border-radius: 10px; padding: 12px 14px; font-size: 13px; margin-bottom: 16px; }
+    .a-alert-success { background: #f0fdf9; border: 1px solid rgba(10,124,92,.2); color: #065f46; }
+    .a-alert-error   { background: #fff1f2; border: 1px solid rgba(239,68,68,.2); color: #991b1b; }
+    .a-alert-warning { background: #fffbeb; border: 1px solid rgba(245,158,11,.2); color: #92400e; }
+
+    /* ── Buttons ───────────────────────────────────────────────────────── */
+    .btn { display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all .2s; text-decoration: none; }
+    .btn-primary { background: var(--ag); color: white; padding: 9px 18px; box-shadow: 0 2px 8px rgba(10,124,92,.25); }
+    .btn-primary:hover { background: var(--ag-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(10,124,92,.35); }
+    .btn-ghost { background: transparent; color: #64748b; padding: 9px 16px; border: 1.5px solid #e2e8f0; }
+    .btn-ghost:hover { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }
+    .btn-danger { background: transparent; color: #dc2626; padding: 6px 10px; border: 1.5px solid transparent; font-size: 12.5px; font-weight: 500; }
+    .btn-danger:hover { background: #fff1f2; border-color: rgba(239,68,68,.2); }
+
+    /* ── Cards ─────────────────────────────────────────────────────────── */
+    .a-card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+    .a-card-header { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+    .a-card-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: .06em; }
+    .a-card-body { padding: 20px; }
+
+    /* ── Table ─────────────────────────────────────────────────────────── */
+    .a-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+    .a-table th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .07em; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+    .a-table td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    .a-table tr:last-child td { border-bottom: none; }
+    .a-table tr:hover td { background: #f8fafc; }
+
+    /* ── Stat card ─────────────────────────────────────────────────────── */
+    .stat-card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,.04); padding: 20px; }
+    .stat-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    .stat-val { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: #1e293b; line-height: 1; margin: 6px 0 2px; }
+    .stat-label { font-size: 11.5px; color: #94a3b8; font-weight: 500; }
+
+    /* ── Progress bar ──────────────────────────────────────────────────── */
+    .prog-track { background: #f1f5f9; border-radius: 100px; height: 4px; margin-top: 10px; }
+    .prog-bar   { height: 4px; border-radius: 100px; transition: width .4s; }
   </style>
   {% block head %}{% endblock %}
 </head>
-<body class="bg-slate-100 min-h-screen flex">
+<body class="bg-slate-50 min-h-screen flex">
 
-  <!-- Sidebar -->
-  <aside class="w-56 min-h-screen flex flex-col fixed left-0 top-0 bottom-0 z-30 overflow-y-auto"
-         style="background: #0c1628;">
+  <!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
+  <aside style="width:220px;min-height:100vh;position:fixed;left:0;top:0;bottom:0;z-index:30;overflow-y:auto;background:var(--sidebar-bg);display:flex;flex-direction:column;">
 
     <!-- Logo -->
-    <div class="px-4 py-4 flex items-center gap-3 border-b border-white/[.06]">
-      <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-           style="background: linear-gradient(135deg,#2563eb,#1d4ed8);">
-        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+    <div style="padding:16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--sidebar-border);">
+      <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--ag),#065f46);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(10,124,92,.3);">
+        <svg width="16" height="16" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
         </svg>
       </div>
-      <div class="min-w-0">
-        <div class="text-white font-semibold text-sm leading-tight truncate">Cabinets Comptables</div>
-        <div class="text-blue-400/70 text-xs mt-0.5">Admin</div>
+      <div style="min-width:0;">
+        <div style="color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Cabinets Comptables</div>
+        <div style="color:rgba(10,124,92,.8);font-size:11px;margin-top:1px;">Admin</div>
       </div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="flex-1 px-2 pt-3 pb-2">
+    <!-- Nav -->
+    <nav style="flex:1;padding:12px 8px 8px;">
 
-      <!-- Dashboard -->
       <a href="/admin/" class="nav-link {% if active == 'dashboard' %}active{% endif %}">
         <span class="nav-icon">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
           </svg>
         </span>
         Tableau de bord
       </a>
 
-      <!-- Cabinets -->
       <p class="nav-section">Cabinets</p>
 
       <a href="/admin/cabinets/new" class="nav-link {% if active == 'new_cabinet' %}active{% endif %}">
         <span class="nav-icon">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
           </svg>
         </span>
         Ajouter un cabinet
@@ -112,105 +161,95 @@
 
       <a href="/admin/cabinets" class="nav-link {% if active == 'cabinets' %}active{% endif %}">
         <span class="nav-icon">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
           </svg>
         </span>
         Tous les cabinets
       </a>
 
-      <!-- Contenu -->
       <p class="nav-section">Contenu &amp; IA</p>
 
       <a href="/admin/blog" class="nav-link {% if active == 'blog' %}active{% endif %}">
         <span class="nav-icon">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
           </svg>
         </span>
         Blog IA
       </a>
 
-      <!-- Outils -->
       <p class="nav-section">Outils</p>
 
       <a href="/admin/outils" class="nav-link {% if active == 'outils' %}active{% endif %}">
         <span class="nav-icon">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
           </svg>
         </span>
         Enrichissement
       </a>
 
-      <!-- Compte -->
-      <p class="nav-section" style="margin-top:auto; padding-top:16px;">Compte</p>
+      <p class="nav-section" style="margin-top:24px;">Compte</p>
 
       <a href="/admin/password" class="nav-link {% if active == 'password' %}active{% endif %}">
         <span class="nav-icon">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
           </svg>
         </span>
         Mot de passe
       </a>
 
-      <a href="/admin/logout"
-         class="nav-link mt-1"
-         style="color:#f87171;"
-         onmouseover="this.style.background='rgba(239,68,68,.1)'; this.style.color='#fca5a5';"
-         onmouseout="this.style.background=''; this.style.color='#f87171';">
+      <a href="/admin/logout" class="nav-link" style="color:#f87171;margin-top:4px;"
+         onmouseover="this.style.background='rgba(239,68,68,.08)';this.style.color='#fca5a5'"
+         onmouseout="this.style.background='';this.style.color='#f87171'">
         <span class="nav-icon">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
           </svg>
         </span>
         Déconnexion
       </a>
     </nav>
 
-    <!-- Footer utilisateur -->
-    <div class="px-3 py-3 border-t border-white/[.06]">
-      <div class="flex items-center gap-2.5 mb-2">
-        <!-- Avatar initiales -->
-        <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-white"
-             style="background: linear-gradient(135deg,#6366f1,#4f46e5);">
+    <!-- User footer -->
+    <div style="padding:12px;border-top:1px solid var(--sidebar-border);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#4f46e5);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:700;color:white;font-family:'Syne',sans-serif;">
           {{ user[0].upper() if user else 'A' }}
         </div>
-        <div class="min-w-0">
-          <div class="text-xs font-medium text-slate-300 truncate">{{ user }}</div>
-          <div class="text-xs text-slate-600">Administrateur</div>
+        <div style="min-width:0;">
+          <div style="font-size:12px;font-weight:600;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ user }}</div>
+          <div style="font-size:11px;color:#475569;">Administrateur</div>
         </div>
       </div>
       <a href="https://www.cabinets-comptables.name" target="_blank"
-         class="flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-md transition-colors"
-         style="color:#475569;"
-         onmouseover="this.style.background='rgba(148,163,184,.06)'; this.style.color='#94a3b8';"
-         onmouseout="this.style.background=''; this.style.color='#475569';">
-        <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+         style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#475569;text-decoration:none;padding:6px 8px;border-radius:6px;transition:all .15s;"
+         onmouseover="this.style.background='rgba(148,163,184,.06)';this.style.color='#94a3b8'"
+         onmouseout="this.style.background='';this.style.color='#475569'">
+        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
         </svg>
-        <span class="truncate">cabinets-comptables.name</span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">cabinets-comptables.name</span>
       </a>
     </div>
   </aside>
 
-  <!-- Main content -->
-  <div class="ml-56 flex-1 flex flex-col min-h-screen">
-    <!-- Top bar -->
-    <header class="bg-white border-b border-slate-200 px-8 py-4 sticky top-0 z-20">
-      <h1 class="text-base font-semibold text-slate-800">{% block page_title %}{% endblock %}</h1>
+  <!-- ── Main ─────────────────────────────────────────────────────────────── -->
+  <div style="margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;">
+
+    <!-- Topbar -->
+    <header style="background:white;border-bottom:1px solid #e2e8f0;padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;box-shadow:0 1px 3px rgba(0,0,0,.04);">
+      <h1 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#1e293b;margin:0;">
+        {% block page_title %}{% endblock %}
+      </h1>
+      {% block topbar_actions %}{% endblock %}
     </header>
 
-    <!-- Page body -->
-    <main class="flex-1 px-8 py-6">
+    <!-- Content -->
+    <main style="flex:1;padding:28px;">
       {% block content %}{% endblock %}
     </main>
   </div>

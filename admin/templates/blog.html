@@ -4,73 +4,88 @@
 {% block title %}Blog — Articles{% endblock %}
 {% block page_title %}Blog — Gestion des articles{% endblock %}
 
-{% block content %}
-<div class="space-y-6">
+{% block head %}
+<style>
+  /* LLM selector */
+  .llm-card {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+    cursor: pointer; transition: all .15s; background: white;
+  }
+  .llm-card:has(input:checked) { border-color: var(--ag); background: rgba(10,124,92,.04); }
+  .llm-card.disabled { opacity: .45; cursor: not-allowed; }
+  .llm-card:not(.disabled):hover { border-color: #94a3b8; }
 
-  <!-- ── Notifications ─────────────────────────────────────────────────────── -->
+  /* Tab buttons */
+  .tab-btn { padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; border: none; cursor: pointer; transition: all .15s; }
+  .tab-btn.active { background: #1e293b; color: white; }
+  .tab-btn:not(.active) { background: #f1f5f9; color: #64748b; }
+  .tab-btn:not(.active):hover { background: #e2e8f0; }
+
+  /* Spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { animation: spin 1s linear infinite; }
+</style>
+{% endblock %}
+
+{% block topbar_actions %}
+<a href="https://www.cabinets-comptables.name/blog/" target="_blank" class="btn btn-ghost" style="font-size:12.5px;">
+  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+  Voir le blog
+</a>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;flex-direction:column;gap:20px;">
+
+  <!-- Notifications -->
   {% if request.query_params.get('published') %}
-  <div class="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm">
-    ✅ Article <strong>{{ request.query_params.get('published') }}</strong> publié et site en cours de régénération.
-    <a href="/admin/outils" class="underline ml-1">Voir les logs</a>
-  </div>
+  <div class="a-alert a-alert-success">✅ Article <strong>{{ request.query_params.get('published') }}</strong> publié et site en cours de régénération. <a href="/admin/outils" style="color:var(--ag);">Voir les logs</a></div>
   {% endif %}
   {% if request.query_params.get('deleted') %}
-  <div class="bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-4 py-3 text-sm">
-    Article supprimé. Pensez à régénérer le site.
-    <a href="/admin/outils" class="underline ml-1">Régénérer</a>
-  </div>
+  <div class="a-alert a-alert-warning">Article supprimé. <a href="/admin/outils" style="color:#92400e;">Régénérer</a></div>
   {% endif %}
   {% if request.query_params.get('error') %}
-  <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
-    ❌ Erreur : titre et contenu obligatoires.
-  </div>
+  <div class="a-alert a-alert-error">❌ Erreur : titre et contenu obligatoires.</div>
   {% endif %}
 
-  <!-- ── 1. Articles existants ──────────────────────────────────────────────── -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+  <!-- Articles existants -->
+  <div class="a-card" style="overflow:hidden;">
+    <div class="a-card-header">
       <div>
-        <h2 class="font-semibold text-slate-800">Articles publiés</h2>
-        <p class="text-xs text-slate-500 mt-0.5">{{ posts | length }} article(s) dans l'annuaire</p>
+        <div class="a-card-title">Articles publiés</div>
+        <div style="font-size:11.5px;color:#94a3b8;margin-top:3px;">{{ posts | length }} article(s)</div>
       </div>
     </div>
 
     {% if posts %}
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
+    <div style="overflow-x:auto;">
+      <table class="a-table">
         <thead>
-          <tr class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500">
-            <th class="px-4 py-2.5 text-left font-semibold">Titre</th>
-            <th class="px-4 py-2.5 text-left font-semibold">Catégorie</th>
-            <th class="px-4 py-2.5 text-left font-semibold">Date</th>
-            <th class="px-4 py-2.5 text-left font-semibold">Lecture</th>
-            <th class="px-4 py-2.5 text-left font-semibold">Actions</th>
+          <tr>
+            <th>Titre</th><th>Catégorie</th><th>Date</th><th>Lecture</th><th>Actions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">
+        <tbody>
           {% for post in posts | sort(attribute='date', reverse=True) %}
-          <tr class="hover:bg-slate-50">
-            <td class="px-4 py-3">
-              <span class="font-medium text-slate-800 line-clamp-1">{{ post.title }}</span>
-              <span class="block text-xs text-slate-400 font-mono mt-0.5">/blog/{{ post.slug }}/</span>
+          <tr>
+            <td>
+              <div style="font-weight:600;color:#1e293b;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ post.title }}</div>
+              <div style="font-size:11px;color:#94a3b8;font-family:monospace;margin-top:2px;">/blog/{{ post.slug }}/</div>
             </td>
-            <td class="px-4 py-3">
-              <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
-                {{ post.category }}
-              </span>
+            <td>
+              <span style="font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:100px;background:rgba(10,124,92,.08);color:var(--ag);">{{ post.category }}</span>
             </td>
-            <td class="px-4 py-3 text-slate-500 text-xs">{{ post.date }}</td>
-            <td class="px-4 py-3 text-slate-500 text-xs">{{ post.reading_time }} min</td>
-            <td class="px-4 py-3">
-              <div class="flex items-center gap-2">
+            <td style="font-size:12.5px;color:#64748b;">{{ post.date }}</td>
+            <td style="font-size:12.5px;color:#64748b;">{{ post.reading_time }} min</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
                 <a href="https://www.cabinets-comptables.name/blog/{{ post.slug }}/" target="_blank"
-                   class="text-xs text-blue-600 hover:text-blue-800 underline">Voir</a>
+                   style="font-size:12px;font-weight:600;color:var(--ag);text-decoration:none;"
+                   onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Voir</a>
                 <form method="POST" action="/admin/blog/{{ post.slug }}/delete"
                       onsubmit="return confirm('Supprimer cet article ?')">
-                  <button type="submit"
-                          class="text-xs text-red-500 hover:text-red-700 underline">
-                    Supprimer
-                  </button>
+                  <button type="submit" class="btn btn-danger" style="padding:4px 8px;font-size:12px;">Supprimer</button>
                 </form>
               </div>
             </td>
@@ -80,210 +95,171 @@
       </table>
     </div>
     {% else %}
-    <div class="px-6 py-10 text-center text-slate-400 text-sm">
+    <div style="padding:48px;text-align:center;color:#94a3b8;font-size:13px;">
       Aucun article pour l'instant. Générez votre premier article ci-dessous.
     </div>
     {% endif %}
   </div>
 
-  <!-- ── 2. Générateur IA ───────────────────────────────────────────────────── -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100">
-      <h2 class="font-semibold text-slate-800">Générer un article avec l'IA</h2>
-      <p class="text-xs text-slate-500 mt-0.5">
-        Respecte la structure des articles existants avec interlinking automatique vers les anciens posts.
-      </p>
+  <!-- Générateur IA -->
+  <div class="a-card" style="overflow:hidden;">
+    <div class="a-card-header">
+      <div>
+        <div class="a-card-title">Générer un article avec l'IA</div>
+        <div style="font-size:11.5px;color:#94a3b8;margin-top:3px;">Structure cohérente + interlinking automatique vers les anciens posts.</div>
+      </div>
     </div>
-
-    <div class="px-6 py-5 space-y-5">
+    <div class="a-card-body" style="display:flex;flex-direction:column;gap:18px;">
 
       <!-- Sélecteur LLM -->
       <div>
-        <label class="block text-sm font-medium text-slate-700 mb-2">Modèle d'IA</label>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <label class="a-label">Modèle d'IA</label>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
           {% for llm_id, llm_label in llm_labels.items() %}
           {% set has_key = llm_keys[llm_id] %}
-          <label class="flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors
-                         {% if has_key %}hover:border-violet-400 hover:bg-violet-50 has-[:checked]:border-violet-500 has-[:checked]:bg-violet-50{% else %}opacity-50 cursor-not-allowed{% endif %}
-                         border-slate-200">
-            <input type="radio" name="llm-select" value="{{ llm_id }}"
+          <label class="llm-card {% if not has_key %}disabled{% endif %}">
+            <input type="radio" name="llm-select" value="{{ llm_id }"
                    {% if loop.first and has_key %}checked{% endif %}
                    {% if not has_key %}disabled{% endif %}
-                   class="accent-violet-600">
-            <div class="min-w-0">
-              <div class="text-xs font-semibold text-slate-700 leading-tight truncate">{{ llm_label }}</div>
-              <div class="text-xs mt-0.5">
-                {% if has_key %}<span class="text-green-600">✅ configuré</span>
-                {% else %}<span class="text-red-500">❌ clé manquante</span>{% endif %}
+                   style="accent-color:var(--ag);">
+            <div style="min-width:0;">
+              <div style="font-size:12.5px;font-weight:600;color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ llm_label }}</div>
+              <div style="font-size:11px;margin-top:2px;">
+                {% if has_key %}<span style="color:var(--ag);">✅ configuré</span>
+                {% else %}<span style="color:#ef4444;">❌ manquant</span>{% endif %}
               </div>
             </div>
           </label>
           {% endfor %}
         </div>
         {% if not api_key_ok %}
-        <p class="text-xs text-amber-700 mt-2 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+        <div class="a-alert a-alert-warning" style="margin-top:10px;">
           Aucune clé API configurée. Ajoutez
-          <code class="bg-amber-100 px-1 rounded">ANTHROPIC_API_KEY</code>,
-          <code class="bg-amber-100 px-1 rounded">GEMINI_API_KEY</code>,
-          <code class="bg-amber-100 px-1 rounded">DEEPSEEK_API_KEY</code> ou
-          <code class="bg-amber-100 px-1 rounded">OPENAI_API_KEY</code>
+          <code style="background:#fef3c7;padding:1px 5px;border-radius:4px;font-size:11px;">ANTHROPIC_API_KEY</code>,
+          <code style="background:#fef3c7;padding:1px 5px;border-radius:4px;font-size:11px;">GEMINI_API_KEY</code>,
+          <code style="background:#fef3c7;padding:1px 5px;border-radius:4px;font-size:11px;">DEEPSEEK_API_KEY</code> ou
+          <code style="background:#fef3c7;padding:1px 5px;border-radius:4px;font-size:11px;">OPENAI_API_KEY</code>
           dans vos variables d'environnement.
-        </p>
+        </div>
         {% endif %}
       </div>
 
+      <!-- Sujet -->
+      <div>
+        <label class="a-label">Sujet de l'article <span style="color:#ef4444;">*</span></label>
+        <input id="gen-topic" type="text" class="a-input"
+               placeholder="Ex : Comment optimiser sa TVA en 2025, Les obligations comptables d'une micro-entreprise…"
+               onkeydown="if(event.key==='Enter'){ event.preventDefault(); generateArticle(); }">
+        <div style="font-size:11.5px;color:#94a3b8;margin-top:5px;">Soyez précis : le sujet pilote la qualité de la génération.</div>
+      </div>
+
       <!-- Catégorie + Longueur + Bouton -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:flex-end;">
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Catégorie</label>
-          <select id="gen-category" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+          <label class="a-label">Catégorie</label>
+          <select id="gen-category" class="a-select">
             {% for cat in categories %}
             <option value="{{ cat }}">{{ cat }}</option>
             {% endfor %}
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Longueur cible</label>
-          <select id="gen-wordcount" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+          <label class="a-label">Longueur cible</label>
+          <select id="gen-wordcount" class="a-select">
             <option value="450">Court (~450 mots)</option>
             <option value="700" selected>Moyen (~700 mots)</option>
             <option value="1000">Long (~1000 mots)</option>
           </select>
         </div>
-        <div class="flex items-end">
-          <button id="generate-btn" onclick="generateArticle()"
-                  {% if not api_key_ok %}disabled{% endif %}
-                  class="w-full inline-flex items-center justify-center gap-2
-                         {% if api_key_ok %}bg-violet-600 hover:bg-violet-700{% else %}bg-slate-300 cursor-not-allowed{% endif %}
-                         text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-            Générer avec l'IA
-          </button>
-        </div>
-      </div>
-
-      <!-- Sujet -->
-      <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">
-          Sujet de l'article <span class="text-red-500">*</span>
-        </label>
-        <input id="gen-topic" type="text"
-               placeholder="Ex : Comment optimiser sa TVA en 2025, Les obligations comptables d'une micro-entreprise…"
-               class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-               onkeydown="if(event.key==='Enter'){ event.preventDefault(); generateArticle(); }">
-        <p class="text-xs text-slate-400 mt-1">Soyez précis : le sujet pilote la qualité de la génération.</p>
+        <button id="generate-btn" onclick="generateArticle()"
+                {% if not api_key_ok %}disabled{% endif %}
+                class="btn {% if api_key_ok %}btn-primary{% else %}btn-ghost{% endif %}"
+                style="white-space:nowrap;{% if not api_key_ok %}opacity:.5;cursor:not-allowed;{% endif %}">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Générer avec l'IA
+        </button>
       </div>
 
     </div>
   </div>
 
-  <!-- ── 3. Aperçu & Publication ────────────────────────────────────────────── -->
-  <div id="preview-section" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-      <h2 class="font-semibold text-slate-800">Aperçu de l'article — relisez avant de publier</h2>
-      <div class="flex items-center gap-2">
-        <button onclick="togglePreview()"
-                class="text-xs text-slate-500 hover:text-slate-700 underline">
-          Basculer HTML / Rendu
-        </button>
-      </div>
+  <!-- Aperçu & Publication -->
+  <div id="preview-section" style="display:none;" class="a-card" style="overflow:hidden;">
+    <div class="a-card-header">
+      <div class="a-card-title">Aperçu — relisez avant de publier</div>
+      <button onclick="togglePreview()" style="font-size:12px;color:#64748b;background:none;border:none;cursor:pointer;text-decoration:underline;">Basculer HTML / Rendu</button>
     </div>
 
-    <!-- Spinner pendant la génération -->
-    <div id="gen-spinner" class="hidden px-6 py-16 flex flex-col items-center justify-center gap-4">
-      <svg class="animate-spin w-10 h-10 text-violet-500" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+    <!-- Spinner -->
+    <div id="gen-spinner" style="display:none;padding:64px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+      <svg class="spinner" width="36" height="36" fill="none" viewBox="0 0 24 24" style="color:var(--ag);">
+        <circle style="opacity:.2" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
+        <path style="opacity:.8" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
       </svg>
-      <p class="text-sm text-slate-500">Génération en cours… (~10-20 secondes)</p>
+      <p style="font-size:13px;color:#94a3b8;">Génération en cours… (~10-20 secondes)</p>
     </div>
 
-    <!-- Erreur génération -->
-    <div id="gen-error" class="hidden px-6 py-4 bg-red-50 border-b border-red-100 text-sm text-red-700"></div>
+    <!-- Erreur -->
+    <div id="gen-error" style="display:none;padding:14px 20px;background:#fff1f2;border-bottom:1px solid rgba(239,68,68,.15);font-size:13px;color:#991b1b;"></div>
 
-    <!-- Formulaire de publication -->
-    <form id="publish-form" method="POST" action="/admin/blog/publish" class="hidden px-6 py-5 space-y-5">
-
-      <div class="grid grid-cols-2 gap-4">
-        <div class="col-span-2">
-          <label class="block text-sm font-medium text-slate-700 mb-1">Titre</label>
-          <input type="text" name="title" id="pub-title" required
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
-                 oninput="autoSlug(this.value)">
+    <!-- Formulaire publication -->
+    <form id="publish-form" method="POST" action="/admin/blog/publish" style="display:none;" class="a-card-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div style="grid-column:span 2;">
+          <label class="a-label">Titre</label>
+          <input type="text" name="title" id="pub-title" required class="a-input" style="font-weight:600;" oninput="autoSlug(this.value)">
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Slug URL</label>
-          <input type="text" name="slug" id="pub-slug"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <p class="text-xs text-slate-400 mt-0.5">/blog/<span id="slug-preview" class="text-blue-600"></span>/</p>
+          <label class="a-label">Slug URL</label>
+          <input type="text" name="slug" id="pub-slug" class="a-input" style="font-family:monospace;font-size:13px;">
+          <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">/blog/<span id="slug-preview" style="color:var(--ag);"></span>/</div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Catégorie</label>
-          <select name="category" id="pub-category"
-                  class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <label class="a-label">Catégorie</label>
+          <select name="category" id="pub-category" class="a-select">
             {% for cat in categories %}
             <option value="{{ cat }}">{{ cat }}</option>
             {% endfor %}
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Date de publication</label>
-          <input type="date" name="date" id="pub-date"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <label class="a-label">Date de publication</label>
+          <input type="date" name="date" id="pub-date" class="a-input">
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Temps de lecture (min)</label>
-          <input type="number" name="reading_time" id="pub-reading-time" min="1" max="60"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <label class="a-label">Temps de lecture (min)</label>
+          <input type="number" name="reading_time" id="pub-reading-time" min="1" max="60" class="a-input">
         </div>
-        <div class="col-span-2">
-          <label class="block text-sm font-medium text-slate-700 mb-1">Meta description (150-160 caractères)</label>
-          <textarea name="description" id="pub-description" rows="2"
-                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
-          <p class="text-xs text-slate-400 mt-0.5"><span id="desc-count">0</span> / 160 caractères</p>
+        <div style="grid-column:span 2;">
+          <label class="a-label">Meta description (150-160 caractères)</label>
+          <textarea name="description" id="pub-description" rows="2" class="a-textarea"></textarea>
+          <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;"><span id="desc-count">0</span> / 160 caractères</div>
         </div>
       </div>
 
-      <!-- Contenu HTML + aperçu rendu -->
-      <div>
-        <div class="flex items-center justify-between mb-1">
-          <label class="block text-sm font-medium text-slate-700">Contenu HTML</label>
-          <div class="flex gap-2 text-xs">
-            <button type="button" onclick="showTab('html')"
-                    id="tab-html"
-                    class="px-2 py-1 rounded bg-slate-800 text-white font-medium">HTML</button>
-            <button type="button" onclick="showTab('render')"
-                    id="tab-render"
-                    class="px-2 py-1 rounded bg-slate-100 text-slate-600 font-medium hover:bg-slate-200">Aperçu rendu</button>
+      <!-- Contenu -->
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <label class="a-label" style="margin:0;">Contenu HTML</label>
+          <div style="display:flex;gap:6px;">
+            <button type="button" onclick="showTab('html')" id="tab-html" class="tab-btn active">HTML</button>
+            <button type="button" onclick="showTab('render')" id="tab-render" class="tab-btn">Aperçu rendu</button>
           </div>
         </div>
-
         <div id="tab-html-panel">
-          <textarea name="content" id="pub-content" rows="20" required
-                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-                    oninput="syncPreview()"></textarea>
+          <textarea name="content" id="pub-content" rows="20" required class="a-textarea" style="font-family:monospace;font-size:12px;" oninput="syncPreview()"></textarea>
         </div>
-        <div id="tab-render-panel" class="hidden">
-          <div id="content-preview"
-               class="w-full min-h-64 px-5 py-4 border border-slate-200 rounded-lg bg-white prose-preview text-sm text-gray-700 leading-relaxed overflow-auto max-h-[600px]">
-          </div>
+        <div id="tab-render-panel" style="display:none;">
+          <div id="content-preview" style="min-height:200px;padding:20px;border:1.5px solid #e2e8f0;border-radius:10px;background:white;font-size:14px;color:#334155;line-height:1.8;overflow:auto;max-height:600px;"></div>
         </div>
       </div>
 
-      <div class="flex items-center gap-4 pt-2 border-t border-slate-100">
-        <button type="submit"
-                class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M5 13l4 4L19 7"/>
-          </svg>
+      <div style="display:flex;align-items:center;gap:12px;padding-top:14px;border-top:1px solid #f1f5f9;">
+        <button type="submit" class="btn btn-primary">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
           Publier l'article
         </button>
-        <p class="text-xs text-slate-400">
-          La publication ajoute l'article à <code>blog_posts.json</code> et régénère le site automatiquement.
-        </p>
+        <span style="font-size:12px;color:#94a3b8;">La publication ajoute l'article à <code style="background:#f1f5f9;padding:1px 5px;border-radius:4px;">blog_posts.json</code> et régénère le site.</span>
       </div>
     </form>
   </div>
@@ -291,150 +267,116 @@
 </div>
 
 <style>
-  /* Styles pour l'aperçu rendu */
-  #content-preview h2 { font-size: 1.2rem; font-weight: 700; color: #111827; margin-top: 1.5rem; margin-bottom: 0.5rem; }
-  #content-preview p  { margin-bottom: 0.9rem; }
-  #content-preview ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.9rem; }
-  #content-preview li { margin-bottom: 0.25rem; }
-  #content-preview strong { color: #1e3a5f; font-weight: 600; }
-  #content-preview a  { color: #2563eb; text-decoration: underline; }
+  #content-preview h2 { font-size:1.2rem;font-weight:700;color:#1e293b;margin-top:1.5rem;margin-bottom:.5rem; }
+  #content-preview p  { margin-bottom:.9rem; }
+  #content-preview ul { list-style:disc;padding-left:1.5rem;margin-bottom:.9rem; }
+  #content-preview li { margin-bottom:.25rem; }
+  #content-preview strong { color:#1e293b;font-weight:600; }
+  #content-preview a  { color:var(--ag);text-decoration:underline; }
 </style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // ── Slugification ────────────────────────────────────────────────────────
-  function slugify(text) {
-    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase().trim()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/[\s]+/g, "-")
-      .replace(/-+/g, "-");
+function slugify(text) {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase().trim()
+    .replace(/[^a-z0-9\s-]/g,"").replace(/[\s]+/g,"-").replace(/-+/g,"-");
+}
+function autoSlug(title) {
+  const s = slugify(title);
+  document.getElementById("pub-slug").value = s;
+  document.getElementById("slug-preview").textContent = s;
+}
+document.getElementById("pub-slug")?.addEventListener("input", function() {
+  document.getElementById("slug-preview").textContent = this.value;
+});
+document.getElementById("pub-description")?.addEventListener("input", function() {
+  document.getElementById("desc-count").textContent = this.value.length;
+});
+
+function showTab(tab) {
+  const hp = document.getElementById("tab-html-panel");
+  const rp = document.getElementById("tab-render-panel");
+  const th = document.getElementById("tab-html");
+  const tr = document.getElementById("tab-render");
+  if (tab === "html") {
+    hp.style.display=""; rp.style.display="none";
+    th.className="tab-btn active"; tr.className="tab-btn";
+  } else {
+    syncPreview();
+    hp.style.display="none"; rp.style.display="";
+    th.className="tab-btn"; tr.className="tab-btn active";
   }
+}
+function syncPreview() {
+  document.getElementById("content-preview").innerHTML =
+    document.getElementById("pub-content").value;
+}
+function togglePreview() {
+  const rp = document.getElementById("tab-render-panel");
+  showTab(rp.style.display === "none" ? "render" : "html");
+}
 
-  function autoSlug(title) {
-    const s = slugify(title);
-    document.getElementById("pub-slug").value = s;
-    document.getElementById("slug-preview").textContent = s;
+async function generateArticle() {
+  const topic = document.getElementById("gen-topic").value.trim();
+  const cat   = document.getElementById("gen-category").value;
+  const wc    = document.getElementById("gen-wordcount").value;
+  const llmR  = document.querySelector('input[name="llm-select"]:checked');
+  const llm   = llmR ? llmR.value : "claude";
+  if (!topic) {
+    const el = document.getElementById("gen-topic");
+    el.style.borderColor = "#ef4444";
+    el.style.boxShadow   = "0 0 0 3px rgba(239,68,68,.15)";
+    el.focus();
+    return;
   }
+  const el = document.getElementById("gen-topic");
+  el.style.borderColor = ""; el.style.boxShadow = "";
 
-  document.getElementById("pub-slug")?.addEventListener("input", function() {
-    document.getElementById("slug-preview").textContent = this.value;
-  });
+  const preview = document.getElementById("preview-section");
+  const spinner = document.getElementById("gen-spinner");
+  const errDiv  = document.getElementById("gen-error");
+  const form    = document.getElementById("publish-form");
+  const btn     = document.getElementById("generate-btn");
 
-  // ── Compteur description ─────────────────────────────────────────────────
-  document.getElementById("pub-description")?.addEventListener("input", function() {
-    document.getElementById("desc-count").textContent = this.value.length;
-  });
+  preview.style.display = "block";
+  spinner.style.display = "flex";
+  errDiv.style.display  = "none";
+  form.style.display    = "none";
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="spinner" width="14" height="14" fill="none" viewBox="0 0 24 24"><circle style="opacity:.2" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/><path style="opacity:.8" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg> Génération…`;
+  preview.scrollIntoView({ behavior:"smooth", block:"start" });
 
-  // ── Onglets HTML / Aperçu ────────────────────────────────────────────────
-  function showTab(tab) {
-    const htmlPanel   = document.getElementById("tab-html-panel");
-    const renderPanel = document.getElementById("tab-render-panel");
-    const btnHtml     = document.getElementById("tab-html");
-    const btnRender   = document.getElementById("tab-render");
+  try {
+    const fd = new FormData();
+    fd.append("topic", topic); fd.append("category", cat);
+    fd.append("word_count", wc); fd.append("llm", llm);
+    const resp = await fetch("/admin/blog/generate", { method:"POST", body:fd });
+    const data = await resp.json();
+    if (!resp.ok || data.error) throw new Error(data.error || "Erreur inconnue");
 
-    if (tab === "html") {
-      htmlPanel.classList.remove("hidden");
-      renderPanel.classList.add("hidden");
-      btnHtml.className   = "px-2 py-1 rounded bg-slate-800 text-white font-medium";
-      btnRender.className = "px-2 py-1 rounded bg-slate-100 text-slate-600 font-medium hover:bg-slate-200";
-    } else {
-      syncPreview();
-      htmlPanel.classList.add("hidden");
-      renderPanel.classList.remove("hidden");
-      btnHtml.className   = "px-2 py-1 rounded bg-slate-100 text-slate-600 font-medium hover:bg-slate-200";
-      btnRender.className = "px-2 py-1 rounded bg-slate-800 text-white font-medium";
-    }
+    document.getElementById("pub-title").value        = data.title        || "";
+    document.getElementById("pub-slug").value         = data.slug         || "";
+    document.getElementById("slug-preview").textContent = data.slug       || "";
+    document.getElementById("pub-description").value  = data.description  || "";
+    document.getElementById("pub-reading-time").value = data.reading_time || 5;
+    document.getElementById("pub-date").value         = data.date         || new Date().toISOString().slice(0,10);
+    document.getElementById("pub-content").value      = data.content      || "";
+    document.getElementById("desc-count").textContent = (data.description||"").length;
+    const cs = document.getElementById("pub-category");
+    for (const o of cs.options) { if (o.value === data.category) { o.selected=true; break; } }
+
+    spinner.style.display = "none";
+    form.style.display = "";
+  } catch(err) {
+    spinner.style.display = "none";
+    errDiv.textContent = "❌ " + err.message;
+    errDiv.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Générer avec l'IA`;
   }
-
-  function syncPreview() {
-    const content = document.getElementById("pub-content").value;
-    document.getElementById("content-preview").innerHTML = content;
-  }
-
-  function togglePreview() {
-    const renderPanel = document.getElementById("tab-render-panel");
-    if (renderPanel.classList.contains("hidden")) {
-      showTab("render");
-    } else {
-      showTab("html");
-    }
-  }
-
-  // ── Génération IA ────────────────────────────────────────────────────────
-  async function generateArticle() {
-    const topic    = document.getElementById("gen-topic").value.trim();
-    const category = document.getElementById("gen-category").value;
-    const wc       = document.getElementById("gen-wordcount").value;
-    const llmRadio = document.querySelector('input[name="llm-select"]:checked');
-    const llm      = llmRadio ? llmRadio.value : "claude";
-
-    if (!topic) {
-      document.getElementById("gen-topic").focus();
-      document.getElementById("gen-topic").classList.add("ring-2", "ring-red-400", "border-red-400");
-      return;
-    }
-    document.getElementById("gen-topic").classList.remove("ring-2", "ring-red-400", "border-red-400");
-
-    // Afficher le panneau preview avec le spinner
-    const preview  = document.getElementById("preview-section");
-    const spinner  = document.getElementById("gen-spinner");
-    const errDiv   = document.getElementById("gen-error");
-    const form     = document.getElementById("publish-form");
-    const btn      = document.getElementById("generate-btn");
-
-    preview.classList.remove("hidden");
-    spinner.classList.remove("hidden");
-    errDiv.classList.add("hidden");
-    form.classList.add("hidden");
-    btn.disabled = true;
-    btn.textContent = "Génération…";
-    preview.scrollIntoView({ behavior: "smooth", block: "start" });
-
-    try {
-      const fd = new FormData();
-      fd.append("topic",      topic);
-      fd.append("category",   category);
-      fd.append("word_count", wc);
-      fd.append("llm",        llm);
-
-      const resp = await fetch("/admin/blog/generate", { method: "POST", body: fd });
-      const data = await resp.json();
-
-      if (!resp.ok || data.error) {
-        throw new Error(data.error || "Erreur inconnue");
-      }
-
-      // Remplir le formulaire de publication
-      document.getElementById("pub-title").value        = data.title        || "";
-      document.getElementById("pub-slug").value         = data.slug         || "";
-      document.getElementById("slug-preview").textContent = data.slug       || "";
-      document.getElementById("pub-description").value  = data.description  || "";
-      document.getElementById("pub-reading-time").value = data.reading_time || 5;
-      document.getElementById("pub-date").value         = data.date         || new Date().toISOString().slice(0, 10);
-      document.getElementById("pub-content").value      = data.content      || "";
-      document.getElementById("desc-count").textContent = (data.description || "").length;
-
-      // Sélectionner la catégorie correcte
-      const catSelect = document.getElementById("pub-category");
-      for (const opt of catSelect.options) {
-        if (opt.value === data.category) { opt.selected = true; break; }
-      }
-
-      spinner.classList.add("hidden");
-      form.classList.remove("hidden");
-
-    } catch (err) {
-      spinner.classList.add("hidden");
-      errDiv.textContent = "❌ " + err.message;
-      errDiv.classList.remove("hidden");
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-      </svg> Générer avec l'IA`;
-    }
-  }
+}
 </script>
 {% endblock %}

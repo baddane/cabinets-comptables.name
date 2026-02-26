@@ -5,226 +5,161 @@
 {% block page_title %}
   {{ "Modifier" if mode == "edit" else "Ajouter" }} un cabinet
   {% if mode == "edit" and cabinet.name %}
-    <span class="ml-2 text-sm font-normal text-slate-500">— {{ cabinet.name }}</span>
+    <span style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:400;color:#94a3b8;margin-left:8px;">— {{ cabinet.name }}</span>
   {% endif %}
 {% endblock %}
 
+{% block topbar_actions %}
+<a href="/admin/cabinets" class="btn btn-ghost" style="font-size:12.5px;">
+  ← Tous les cabinets
+</a>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-3xl">
+<div style="max-width:680px;">
   {% if error %}
-  <div class="mb-5 flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
-    <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-    </svg>
+  <div class="a-alert a-alert-error">
+    <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20" style="flex-shrink:0;"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
     {{ error }}
   </div>
   {% endif %}
 
   <form method="POST" action="/admin/cabinets/{{ idx ~ '/edit' if mode == 'edit' else 'new' }}"
-        class="space-y-6">
+        style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- Infos principales -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">
-        Informations principales <span class="text-red-500">*</span>
-      </h2>
-      <div class="grid grid-cols-1 gap-4">
+    <div class="a-card">
+      <div class="a-card-header"><span class="a-card-title">Informations principales <span style="color:#ef4444;">*</span></span></div>
+      <div class="a-card-body" style="display:flex;flex-direction:column;gap:14px;">
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">
-            Nom du cabinet <span class="text-red-500">*</span>
-          </label>
-          <input type="text" name="name" required
-                 value="{{ cabinet.get('name', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="Cabinet Dupont Expertise Comptable">
+          <label class="a-label">Nom du cabinet <span style="color:#ef4444;">*</span></label>
+          <input type="text" name="name" required value="{{ cabinet.get('name', '') }}" class="a-input" placeholder="Cabinet Dupont Expertise Comptable">
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">
-              Ville <span class="text-red-500">*</span>
-            </label>
-            <input type="text" name="city" required
-                   value="{{ cabinet.get('city', '') }}"
-                   class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                   placeholder="Paris">
+            <label class="a-label">Ville <span style="color:#ef4444;">*</span></label>
+            <input type="text" name="city" required value="{{ cabinet.get('city', '') }}" class="a-input" placeholder="Paris">
           </div>
           <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Code postal</label>
-            <input type="text" name="postal_code"
-                   value="{{ cabinet.get('postal_code', '') }}"
-                   class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                   placeholder="75008">
+            <label class="a-label">Code postal</label>
+            <input type="text" name="postal_code" value="{{ cabinet.get('postal_code', '') }}" class="a-input" placeholder="75008">
           </div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Adresse</label>
-          <input type="text" name="address"
-                 value="{{ cabinet.get('address', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="12 rue de la Paix">
+          <label class="a-label">Adresse</label>
+          <input type="text" name="address" value="{{ cabinet.get('address', '') }}" class="a-input" placeholder="12 rue de la Paix">
         </div>
       </div>
     </div>
 
     <!-- Contact -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">Contact</h2>
-      <div class="grid grid-cols-2 gap-4">
+    <div class="a-card">
+      <div class="a-card-header"><span class="a-card-title">Contact</span></div>
+      <div class="a-card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
-          <input type="tel" name="phone"
-                 value="{{ cabinet.get('phone', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="01 23 45 67 89">
+          <label class="a-label">Téléphone</label>
+          <input type="tel" name="phone" value="{{ cabinet.get('phone', '') }}" class="a-input" placeholder="01 23 45 67 89">
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Site web</label>
-          <input type="url" name="website"
-                 value="{{ cabinet.get('website', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="https://www.cabinet-dupont.fr">
+          <label class="a-label">Site web</label>
+          <input type="url" name="website" value="{{ cabinet.get('website', '') }}" class="a-input" placeholder="https://www.cabinet-dupont.fr">
         </div>
       </div>
     </div>
 
-    <!-- Note & Infos -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">Note &amp; Catégorie</h2>
-      <div class="grid grid-cols-2 gap-4">
+    <!-- Note & Catégorie -->
+    <div class="a-card">
+      <div class="a-card-header"><span class="a-card-title">Note &amp; Catégorie</span></div>
+      <div class="a-card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Note (0–5)</label>
-          <input type="number" name="rating" min="0" max="5" step="0.1"
-                 value="{{ cabinet.get('rating', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="4.3">
+          <label class="a-label">Note (0–5)</label>
+          <input type="number" name="rating" min="0" max="5" step="0.1" value="{{ cabinet.get('rating', '') }}" class="a-input" placeholder="4.3">
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Nombre d'avis</label>
-          <input type="number" name="reviews_count" min="0"
-                 value="{{ cabinet.get('reviews_count', 0) }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="42">
+          <label class="a-label">Nombre d'avis</label>
+          <input type="number" name="reviews_count" min="0" value="{{ cabinet.get('reviews_count', 0) }}" class="a-input" placeholder="42">
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Source de la note</label>
-          <input type="text" name="rating_info"
-                 value="{{ cabinet.get('rating_info', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="Trustpilot (3966)">
+          <label class="a-label">Source de la note</label>
+          <input type="text" name="rating_info" value="{{ cabinet.get('rating_info', '') }}" class="a-input" placeholder="Trustpilot (3966)">
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Catégorie</label>
-          <input type="text" name="category"
-                 value="{{ cabinet.get('category', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="Comptable">
+          <label class="a-label">Catégorie</label>
+          <input type="text" name="category" value="{{ cabinet.get('category', '') }}" class="a-input" placeholder="Comptable">
         </div>
-        <div class="col-span-2">
-          <label class="block text-sm font-medium text-slate-700 mb-1">Horaires</label>
-          <input type="text" name="open_hours"
-                 value="{{ cabinet.get('open_hours', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="Lun-Ven 09:00-18:00">
+        <div style="grid-column:span 2;">
+          <label class="a-label">Horaires</label>
+          <input type="text" name="open_hours" value="{{ cabinet.get('open_hours', '') }}" class="a-input" placeholder="Lun-Ven 09:00-18:00">
         </div>
       </div>
     </div>
 
-    <!-- GPS & Localisation -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">GPS &amp; Localisation</h2>
-      <div class="grid grid-cols-2 gap-4">
+    <!-- GPS -->
+    <div class="a-card">
+      <div class="a-card-header"><span class="a-card-title">GPS &amp; Localisation</span></div>
+      <div class="a-card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Latitude</label>
-          <input type="number" name="lat" step="any"
-                 value="{{ cabinet.get('lat', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="48.8566">
+          <label class="a-label">Latitude</label>
+          <input type="number" name="lat" step="any" value="{{ cabinet.get('lat', '') }}" class="a-input" placeholder="48.8566">
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Longitude</label>
-          <input type="number" name="lng" step="any"
-                 value="{{ cabinet.get('lng', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="2.3522">
+          <label class="a-label">Longitude</label>
+          <input type="number" name="lng" step="any" value="{{ cabinet.get('lng', '') }}" class="a-input" placeholder="2.3522">
         </div>
-        <div class="col-span-2">
-          <label class="block text-sm font-medium text-slate-700 mb-1">URL Bing Maps</label>
-          <input type="url" name="bing_maps_url"
-                 value="{{ cabinet.get('bing_maps_url', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="https://www.bing.com/maps?...">
+        <div style="grid-column:span 2;">
+          <label class="a-label">URL Google Maps</label>
+          <input type="url" name="google_maps_url" value="{{ cabinet.get('google_maps_url', cabinet.get('bing_maps_url', '')) }}" class="a-input" placeholder="https://maps.google.com/...">
         </div>
       </div>
     </div>
 
-    <!-- Contact étendu -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">E-mail &amp; Réseaux sociaux</h2>
-      <div class="grid grid-cols-2 gap-4">
-        <div class="col-span-2">
-          <label class="block text-sm font-medium text-slate-700 mb-1">E-mail</label>
-          <input type="email" name="email"
-                 value="{{ cabinet.get('email', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="contact@cabinet.fr">
+    <!-- E-mail & Réseaux -->
+    <div class="a-card">
+      <div class="a-card-header"><span class="a-card-title">E-mail &amp; Réseaux sociaux</span></div>
+      <div class="a-card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="grid-column:span 2;">
+          <label class="a-label">E-mail</label>
+          <input type="email" name="email" value="{{ cabinet.get('email', '') }}" class="a-input" placeholder="contact@cabinet.fr">
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Facebook</label>
-          <input type="url" name="facebook"
-                 value="{{ cabinet.get('facebook', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="https://facebook.com/...">
+          <label class="a-label">Facebook</label>
+          <input type="url" name="facebook" value="{{ cabinet.get('facebook', '') }}" class="a-input" placeholder="https://facebook.com/...">
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Instagram</label>
-          <input type="url" name="instagram"
-                 value="{{ cabinet.get('instagram', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="https://instagram.com/...">
+          <label class="a-label">Instagram</label>
+          <input type="url" name="instagram" value="{{ cabinet.get('instagram', '') }}" class="a-input" placeholder="https://instagram.com/...">
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">Twitter / X</label>
-          <input type="url" name="twitter"
-                 value="{{ cabinet.get('twitter', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="https://twitter.com/...">
+          <label class="a-label">Twitter / X</label>
+          <input type="url" name="twitter" value="{{ cabinet.get('twitter', '') }}" class="a-input" placeholder="https://twitter.com/...">
         </div>
         <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">ID externe</label>
-          <input type="text" name="external_id"
-                 value="{{ cabinet.get('external_id', '') }}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                 placeholder="ypid:YN9B5A17A55148AD1F">
+          <label class="a-label">ID externe</label>
+          <input type="text" name="external_id" value="{{ cabinet.get('external_id', '') }}" class="a-input" placeholder="ypid:YN9B5A17A55148AD1F">
         </div>
       </div>
     </div>
 
     <!-- Image -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-sm font-semibold text-slate-700 mb-4 pb-2 border-b border-slate-100">Image principale</h2>
-      <div>
-        <label class="block text-sm font-medium text-slate-700 mb-1">URL de l'image</label>
-        <input type="url" name="featured_image"
-               value="{{ cabinet.get('featured_image', '') }}"
-               class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-               placeholder="https://...">
+    <div class="a-card">
+      <div class="a-card-header"><span class="a-card-title">Image principale</span></div>
+      <div class="a-card-body">
+        <label class="a-label">URL de l'image</label>
+        <input type="url" name="featured_image" value="{{ cabinet.get('featured_image', '') }}" class="a-input" placeholder="https://...">
         {% if cabinet.get('featured_image') %}
         <img src="{{ cabinet.featured_image }}" alt="Image du cabinet"
-             class="mt-3 rounded-lg border border-slate-200 max-h-32 object-cover">
+             style="margin-top:12px;border-radius:8px;border:1px solid #e2e8f0;max-height:100px;object-fit:cover;">
         {% endif %}
       </div>
     </div>
 
     <!-- Actions -->
-    <div class="flex items-center gap-3">
-      <button type="submit"
-              class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors">
+    <div style="display:flex;align-items:center;gap:10px;padding-bottom:8px;">
+      <button type="submit" class="btn btn-primary">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
         {{ "Enregistrer les modifications" if mode == "edit" else "Créer le cabinet" }}
       </button>
-      <a href="/admin/cabinets"
-         class="px-6 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-lg transition-colors">
-        Annuler
-      </a>
+      <a href="/admin/cabinets" class="btn btn-ghost">Annuler</a>
     </div>
   </form>
 </div>

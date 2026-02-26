@@ -2,7 +2,7 @@
 {% set active = "outils" %}
 
 {% block title %}Outils{% endblock %}
-{% block page_title %}Outils{% endblock %}
+{% block page_title %}Outils d'enrichissement{% endblock %}
 
 {% block content %}
 
@@ -10,214 +10,159 @@
 {% set t = tasks.get(task_id) %}
 {% if t %}
   {% if t.status == "running" %}
-    <span class="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full animate-pulse">
-      <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span> En cours…
+    <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:100px;background:#eff6ff;border:1px solid rgba(59,130,246,.2);color:#1d4ed8;animation:pulse 2s infinite;">
+      <span style="width:6px;height:6px;border-radius:50%;background:#3b82f6;"></span> En cours…
     </span>
   {% elif t.status == "done" %}
-    <span class="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+    <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:100px;background:#f0fdf9;border:1px solid rgba(10,124,92,.2);color:#065f46;">
       ✅ Terminé
     </span>
   {% elif t.status == "error" %}
-    <span class="inline-flex items-center gap-1 text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+    <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:100px;background:#fff1f2;border:1px solid rgba(239,68,68,.2);color:#991b1b;">
       ❌ Erreur
     </span>
   {% endif %}
 {% endif %}
 {% endmacro %}
 
+<div style="display:flex;flex-direction:column;gap:20px;">
+
 {% if request.query_params.get('started') %}
-<div class="mb-4 bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm">
-  ✅ Tâche démarrée. Consultez les logs ci-dessous pour suivre la progression.
-</div>
+<div class="a-alert a-alert-success">✅ Tâche démarrée. Consultez les logs ci-dessous pour suivre la progression.</div>
 {% endif %}
 {% if request.query_params.get('busy') %}
-<div class="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-lg px-4 py-3 text-sm">
-  ⚠️ Une tâche est déjà en cours. Attendez qu'elle se termine.
-</div>
+<div class="a-alert a-alert-warning">⚠️ Une tâche est déjà en cours. Attendez qu'elle se termine.</div>
 {% endif %}
 {% if request.query_params.get('enriched') is not none and request.query_params.get('processed') is not none %}
-{% set n_enriched  = request.query_params.get('enriched') %}
-{% set n_processed = request.query_params.get('processed') %}
-{% set n_remaining = request.query_params.get('remaining') %}
-<div class="mb-4 bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm flex items-center justify-between">
-  <span>
-    ✅ Lot traité : <strong>{{ n_enriched }} cabinet(s) enrichi(s)</strong> sur {{ n_processed }} traités.
-    {% if n_remaining != '0' %}
-      <span class="text-slate-500 ml-1">Restant à enrichir : {{ n_remaining }}.</span>
-    {% else %}
-      <span class="text-green-600 ml-1 font-medium">Tout est enrichi !</span>
-    {% endif %}
+{% set n_e = request.query_params.get('enriched') %}
+{% set n_p = request.query_params.get('processed') %}
+{% set n_r = request.query_params.get('remaining') %}
+<div class="a-alert a-alert-success" style="justify-content:space-between;">
+  <span>✅ Lot traité : <strong>{{ n_e }} cabinet(s) enrichi(s)</strong> sur {{ n_p }} traités.
+    {% if n_r != '0' %}<span style="color:#64748b;"> Restant : {{ n_r }}.</span>
+    {% else %}<span style="color:var(--ag);"> Tout est enrichi !</span>{% endif %}
   </span>
-  {% if n_remaining != '0' %}
-  <a href="/admin/outils"
-     class="ml-4 text-sm font-semibold bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-lg transition-colors whitespace-nowrap">
-    Lot suivant →
-  </a>
+  {% if n_r != '0' %}
+  <a href="/admin/outils" class="btn btn-primary" style="font-size:12px;">Lot suivant →</a>
   {% endif %}
 </div>
 {% endif %}
 {% if request.query_params.get('error') == 'no_key' %}
-<div class="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
-  ❌ <strong>GOOGLE_PLACES_API_KEY</strong> non définie dans Vercel → Settings → Environment Variables.
-</div>
+<div class="a-alert a-alert-error">❌ <strong>GOOGLE_PLACES_API_KEY</strong> non définie dans les variables d'environnement.</div>
 {% endif %}
 
-<div class="space-y-6">
-
-  <!-- ── 1. Enrichissement Google Places ───────────────────────────────────── -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+  <!-- Enrichissement Google Places -->
+  <div class="a-card" style="overflow:hidden;">
+    <div class="a-card-header">
       <div>
-        <h2 class="font-semibold text-slate-800">Enrichissement Google Places</h2>
-        <p class="text-xs text-slate-500 mt-0.5">
-          Récupère téléphone, site web, note et avis Google pour chaque cabinet.
-          Nécessite une clé API Google Places.
-        </p>
+        <div class="a-card-title">Enrichissement Google Places</div>
+        <div style="font-size:11.5px;color:#94a3b8;margin-top:3px;">Récupère téléphone, site web, note et avis Google pour chaque cabinet.</div>
       </div>
-      <div class="flex items-center gap-3">
+      <div style="display:flex;align-items:center;gap:10px;">
         {% if google_key_ok %}
-        <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">✅ Clé API configurée</span>
+        <span style="font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:100px;background:#f0fdf9;border:1px solid rgba(10,124,92,.2);color:#065f46;">✅ Clé API configurée</span>
         {% else %}
-        <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">❌ Clé API manquante</span>
+        <span style="font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:100px;background:#fff1f2;border:1px solid rgba(239,68,68,.2);color:#991b1b;">❌ Clé API manquante</span>
         {% endif %}
         {% if not vercel_mode %}{{ task_badge("enrich") }}{% endif %}
       </div>
     </div>
-    <form method="POST" action="/admin/outils/enrich" class="px-6 py-5">
+    <div class="a-card-body">
       {% if not google_key_ok %}
-      <div class="mb-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
+      <div class="a-alert a-alert-warning" style="margin-bottom:16px;">
         <strong>Clé API manquante.</strong> Définissez
-        <code class="bg-amber-100 px-1 rounded text-xs">GOOGLE_PLACES_API_KEY</code>
+        <code style="background:#fef3c7;padding:1px 5px;border-radius:4px;font-size:11px;">GOOGLE_PLACES_API_KEY</code>
         dans {% if vercel_mode %}Vercel → Settings → Environment Variables{% else %}vos variables d'environnement{% endif %}.<br>
-        <span class="text-xs mt-1 block">
-          → <a href="https://console.cloud.google.com/apis/library/places-backend.googleapis.com" target="_blank" class="underline">Console Google Cloud</a>
-          — Activez "Places API" puis créez une clé.
-        </span>
+        <a href="https://console.cloud.google.com/apis/library/places-backend.googleapis.com" target="_blank" style="color:#92400e;font-size:12px;">→ Console Google Cloud</a>
+        — Activez "Places API" puis créez une clé.
       </div>
       {% endif %}
-
       {% if vercel_mode %}
-      <div class="mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
-        <strong>Mode batch Vercel :</strong> maximum 100 cabinets par appel (limite 60 s).
-        Chaque lot commite dans GitHub et déclenche un redéploiement (~1 min).
-        Cliquez sur <em>Lot suivant</em> après chaque déploiement pour continuer.
-        <br><span class="text-xs mt-1 block text-blue-600">
-          Coût ≈ $52 / 1 000 cabinets. Quota Google gratuit : $200/mois.
-        </span>
+      <div class="a-alert a-alert-warning" style="margin-bottom:16px;">
+        <strong>Mode batch Vercel :</strong> max 100 cabinets/appel (limite 60 s). Chaque lot commit dans GitHub et déclenche un redéploiement (~1 min).
+        <span style="display:block;font-size:11.5px;margin-top:4px;color:#92400e;">Coût ≈ $52 / 1 000 cabinets. Quota Google gratuit : $200/mois.</span>
       </div>
       {% endif %}
-
-      <div class="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">
-            Cabinets à enrichir {% if vercel_mode %}(ce lot){% else %}(max){% endif %}
-          </label>
-          <input type="number" name="limit"
-                 value="{% if vercel_mode %}50{% else %}1000{% endif %}"
-                 min="1" max="{% if vercel_mode %}100{% else %}10000{% endif %}"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <p class="text-xs text-slate-400 mt-1">
-            {% if vercel_mode %}Max 100 par lot.{% else %}Coût ≈ $52/1 000 cabinets. Quota Google gratuit : $200/mois.{% endif %}
-          </p>
+      <form method="POST" action="/admin/outils/enrich">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div>
+            <label class="a-label">Cabinets à enrichir {% if vercel_mode %}(ce lot){% else %}(max){% endif %}</label>
+            <input type="number" name="limit" value="{% if vercel_mode %}50{% else %}1000{% endif %}"
+                   min="1" max="{% if vercel_mode %}100{% else %}10000{% endif %}" class="a-input">
+            <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">{% if vercel_mode %}Max 100 par lot.{% else %}Coût ≈ $52/1 000 cabinets.{% endif %}</div>
+          </div>
+          <div>
+            <label class="a-label">Filtre villes (optionnel)</label>
+            <input type="text" name="cities" placeholder="ex : Paris,Lyon,Marseille" class="a-input">
+            <div style="font-size:11.5px;color:#94a3b8;margin-top:4px;">Vide = enrichir toutes les villes.</div>
+          </div>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-700 mb-1">
-            Filtre villes (optionnel)
-          </label>
-          <input type="text" name="cities" placeholder="ex : Paris,Lyon,Marseille"
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <p class="text-xs text-slate-400 mt-1">Vide = enrichir toutes les villes.</p>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button type="submit" {% if not google_key_ok %}disabled{% endif %}
+                  class="btn {% if google_key_ok %}btn-primary{% else %}btn-ghost{% endif %}"
+                  style="{% if not google_key_ok %}opacity:.5;cursor:not-allowed;{% endif %}">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3l14 9-14 9V3z"/></svg>
+            {% if vercel_mode %}Enrichir ce lot{% else %}Lancer l'enrichissement{% endif %}
+          </button>
+          {% if not vercel_mode %}
+          <button type="button" onclick="loadLog('enrich')" style="font-size:13px;color:#64748b;background:none;border:none;cursor:pointer;text-decoration:underline;">Voir les logs</button>
+          {% endif %}
         </div>
-      </div>
-      <div class="flex items-center gap-3">
-        <button type="submit" {% if not google_key_ok %}disabled{% endif %}
-                class="inline-flex items-center gap-2 {% if google_key_ok %}bg-purple-600 hover:bg-purple-700{% else %}bg-slate-300 cursor-not-allowed{% endif %} text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l14 9-14 9V3z"/>
-          </svg>
-          {% if vercel_mode %}Enrichir ce lot{% else %}Lancer l'enrichissement{% endif %}
-        </button>
-        {% if not vercel_mode %}
-        <button type="button" onclick="loadLog('enrich')"
-                class="text-sm text-slate-500 hover:text-slate-700 underline">
-          Voir les logs
-        </button>
-        {% endif %}
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
 
-  <!-- ── 3. Générateur de site ─────────────────────────────────────────────── -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+  <!-- Régénérer le site -->
+  <div class="a-card" style="overflow:hidden;">
+    <div class="a-card-header">
       <div>
-        <h2 class="font-semibold text-slate-800">Régénérer le site statique</h2>
-        <p class="text-xs text-slate-500 mt-0.5">
+        <div class="a-card-title">Régénérer le site statique</div>
+        <div style="font-size:11.5px;color:#94a3b8;margin-top:3px;">
           Génère l'accueil, l'index des villes, le blog et le sitemap.
           {% if not vercel_mode %}Les pages cabinets/villes sont dynamiques (Supabase).{% endif %}
-        </p>
+        </div>
       </div>
       {% if not vercel_mode %}{{ task_badge("generate") }}{% endif %}
     </div>
-
-    {% if vercel_mode %}
-    <div class="px-6 py-5 space-y-3">
-      <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
-        <strong>Automatique.</strong>
-        Chaque commit sur GitHub déclenche un redéploiement Vercel qui régénère
-        les pages statiques (accueil, blog, sitemap).
-        Les pages <code class="bg-blue-100 px-1 rounded">/villes/{slug}</code> et
-        <code class="bg-blue-100 px-1 rounded">/cabinets/{slug}</code> sont servies
-        <strong>dynamiquement depuis Supabase</strong> — aucune génération nécessaire.
+    <div class="a-card-body">
+      {% if vercel_mode %}
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="a-alert a-alert-warning">
+          <strong>Automatique.</strong> Chaque commit GitHub déclenche un redéploiement Vercel qui régénère les pages statiques. Les pages <code style="background:#fef3c7;padding:1px 5px;border-radius:4px;font-size:11px;">/villes/</code> et <code style="background:#fef3c7;padding:1px 5px;border-radius:4px;font-size:11px;">/cabinets/</code> sont servies <strong>dynamiquement depuis Supabase</strong>.
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          {% for label, color in [("Accueil — statique","#059669"),("Blog — statique","#059669"),("/villes/{slug} — Supabase","#3b82f6"),("/cabinets/{slug} — Supabase","#3b82f6")] %}
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:100px;padding:3px 10px;">
+            <span style="width:6px;height:6px;border-radius:50%;background:{{ color }};flex-shrink:0;"></span>{{ label }}
+          </span>
+          {% endfor %}
+        </div>
       </div>
-      <div class="flex flex-wrap gap-2 text-xs text-slate-500">
-        <span class="inline-flex items-center gap-1 bg-slate-100 rounded px-2 py-1">
-          <span class="text-emerald-500">●</span> Accueil — statique
-        </span>
-        <span class="inline-flex items-center gap-1 bg-slate-100 rounded px-2 py-1">
-          <span class="text-emerald-500">●</span> Blog — statique
-        </span>
-        <span class="inline-flex items-center gap-1 bg-slate-100 rounded px-2 py-1">
-          <span class="text-blue-500">●</span> /villes/{slug} — dynamique Supabase
-        </span>
-        <span class="inline-flex items-center gap-1 bg-slate-100 rounded px-2 py-1">
-          <span class="text-blue-500">●</span> /cabinets/{slug} — dynamique Supabase
-        </span>
+      {% else %}
+      <div style="display:flex;align-items:center;gap:10px;">
+        <form method="POST" action="/admin/outils/generate">
+          <button type="submit" class="btn btn-primary">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Régénérer maintenant
+          </button>
+        </form>
+        <button type="button" onclick="loadLog('generate')" style="font-size:13px;color:#64748b;background:none;border:none;cursor:pointer;text-decoration:underline;">Voir les logs</button>
       </div>
+      {% endif %}
     </div>
-    {% else %}
-    <div class="px-6 py-5 flex items-center gap-3">
-      <form method="POST" action="/admin/outils/generate">
-        <button type="submit"
-                class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
-          Régénérer maintenant
-        </button>
-      </form>
-      <button type="button" onclick="loadLog('generate')"
-              class="text-sm text-slate-500 hover:text-slate-700 underline">
-        Voir les logs
-      </button>
-    </div>
-    {% endif %}
   </div>
 
-  <!-- ── Logs (mode local uniquement) ─────────────────────────────────────── -->
+  <!-- Logs panel -->
   {% if not vercel_mode %}
-  <div id="log-panel" class="hidden bg-slate-900 rounded-xl shadow-sm border border-slate-700 overflow-hidden">
-    <div class="px-5 py-3 border-b border-slate-700 flex items-center justify-between">
-      <span id="log-title" class="text-sm font-medium text-slate-300">Logs</span>
-      <div class="flex items-center gap-3">
-        <span id="log-status" class="text-xs text-slate-400"></span>
-        <button onclick="stopPolling()" class="text-xs text-slate-400 hover:text-white">✕ Fermer</button>
+  <div id="log-panel" style="display:none;background:#0c1628;border-radius:12px;border:1px solid rgba(255,255,255,.08);overflow:hidden;">
+    <div style="padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;">
+      <span id="log-title" style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#e2e8f0;">Logs</span>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span id="log-status" style="font-size:12px;color:#64748b;"></span>
+        <button onclick="stopPolling()" style="font-size:12px;color:#475569;background:none;border:none;cursor:pointer;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#475569'">✕ Fermer</button>
       </div>
     </div>
-    <pre id="log-content"
-         class="text-xs text-green-300 font-mono p-5 max-h-[500px] overflow-y-auto whitespace-pre-wrap">
-Chargement…
-    </pre>
+    <pre id="log-content" style="font-family:monospace;font-size:12px;color:#6ee7c4;padding:20px;max-height:500px;overflow-y:auto;white-space:pre-wrap;line-height:1.7;">Chargement…</pre>
   </div>
   {% endif %}
 
@@ -227,21 +172,15 @@ Chargement…
 {% block scripts %}
 {% if not vercel_mode %}
 <script>
-  let _pollTimer = null;
-  let _currentTask = null;
-
-  const taskLabels = {
-    enrich: "Logs — Enrichissement Google Places",
-    generate: "Logs — Générateur de site",
-  };
+  let _pollTimer = null, _currentTask = null;
+  const taskLabels = { enrich:"Logs — Enrichissement Google Places", generate:"Logs — Générateur de site" };
 
   function loadLog(taskId) {
     _currentTask = taskId;
-    document.getElementById("log-panel").classList.remove("hidden");
+    document.getElementById("log-panel").style.display = "block";
     document.getElementById("log-title").textContent = taskLabels[taskId] || taskId;
     pollLog();
   }
-
   function pollLog() {
     if (!_currentTask) return;
     fetch(`/admin/api/task/${_currentTask}`)
@@ -251,32 +190,18 @@ Chargement…
         const status  = document.getElementById("log-status");
         content.textContent = data.log || "(pas encore de logs)";
         content.scrollTop   = content.scrollHeight;
-
         const s = data.status || "idle";
-        status.textContent = {
-          idle: "En attente", running: "⟳ En cours…",
-          done: "✅ Terminé", error: "❌ Erreur"
-        }[s] || s;
-
-        if (s === "running") {
-          _pollTimer = setTimeout(pollLog, 2000);
-        }
+        status.textContent = { idle:"En attente", running:"⟳ En cours…", done:"✅ Terminé", error:"❌ Erreur" }[s] || s;
+        if (s === "running") _pollTimer = setTimeout(pollLog, 2000);
       })
-      .catch(() => {
-        _pollTimer = setTimeout(pollLog, 3000);
-      });
+      .catch(() => { _pollTimer = setTimeout(pollLog, 3000); });
   }
-
   function stopPolling() {
-    clearTimeout(_pollTimer);
-    _currentTask = null;
-    document.getElementById("log-panel").classList.add("hidden");
+    clearTimeout(_pollTimer); _currentTask = null;
+    document.getElementById("log-panel").style.display = "none";
   }
-
   {% for task_id, task in tasks.items() %}
-  {% if task.status == "running" %}
-  loadLog("{{ task_id }}");
-  {% endif %}
+  {% if task.status == "running" %}loadLog("{{ task_id }}");{% endif %}
   {% endfor %}
 </script>
 {% endif %}

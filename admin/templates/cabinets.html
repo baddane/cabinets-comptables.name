@@ -4,159 +4,111 @@
 {% block title %}Cabinets{% endblock %}
 {% block page_title %}
   Cabinets
-  <span class="ml-2 text-sm font-normal text-slate-500">{{ total }} résultat{{ "s" if total > 1 }}</span>
+  <span style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:#94a3b8;margin-left:8px;">{{ total }} résultat{{ "s" if total > 1 }}</span>
+{% endblock %}
+
+{% block topbar_actions %}
+<a href="/admin/cabinets/new" class="btn btn-primary" style="font-size:12.5px;">
+  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+  Ajouter
+</a>
 {% endblock %}
 
 {% block content %}
 
 <!-- Notifications -->
 {% if request.query_params.get('created') %}
-<div class="mb-4 flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm">
-  ✅ Cabinet ajouté avec succès.
-</div>
+<div class="a-alert a-alert-success" style="margin-bottom:16px;">✅ Cabinet ajouté avec succès.</div>
 {% elif request.query_params.get('updated') %}
-<div class="mb-4 flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm">
-  ✅ Cabinet mis à jour.
-</div>
+<div class="a-alert a-alert-success" style="margin-bottom:16px;">✅ Cabinet mis à jour.</div>
 {% elif request.query_params.get('deleted') %}
-<div class="mb-4 flex items-center gap-2 bg-orange-50 border border-orange-200 text-orange-700 rounded-lg px-4 py-3 text-sm">
-  🗑️ Cabinet supprimé.
-</div>
+<div class="a-alert a-alert-warning" style="margin-bottom:16px;">🗑️ Cabinet supprimé.</div>
 {% endif %}
 
 <!-- Toolbar -->
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-5">
-  <form method="GET" class="flex flex-wrap gap-3 items-center">
-    <input
-      type="text" name="q" value="{{ q }}"
-      placeholder="Rechercher par nom, ville, adresse…"
-      class="flex-1 min-w-[220px] px-3 py-2 border border-slate-300 rounded-lg text-sm
-             focus:outline-none focus:ring-2 focus:ring-blue-500"
-    >
-    <select name="city"
-            class="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white
-                   focus:outline-none focus:ring-2 focus:ring-blue-500">
+<div class="a-card" style="padding:14px;margin-bottom:16px;">
+  <form method="GET" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+    <input type="text" name="q" value="{{ q }}" placeholder="Rechercher par nom, ville, adresse…"
+           class="a-input" style="flex:1;min-width:200px;width:auto;">
+    <select name="city" class="a-select" style="width:auto;min-width:160px;">
       <option value="">Toutes les villes</option>
       {% for c in all_cities %}
       <option value="{{ c }}" {% if c == city %}selected{% endif %}>{{ c }}</option>
       {% endfor %}
     </select>
-    <button type="submit"
-            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
-      Filtrer
-    </button>
+    <button type="submit" class="btn btn-primary">Filtrer</button>
     {% if q or city %}
-    <a href="/admin/cabinets" class="px-3 py-2 text-slate-500 hover:text-slate-700 text-sm">Réinitialiser</a>
+    <a href="/admin/cabinets" style="font-size:13px;color:#94a3b8;text-decoration:none;" onmouseover="this.style.color='#64748b'" onmouseout="this.style.color='#94a3b8'">Réinitialiser</a>
     {% endif %}
-    <div class="ml-auto">
-      <a href="/admin/cabinets/new"
-         class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        Ajouter
-      </a>
-    </div>
   </form>
 </div>
 
 <!-- Table -->
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead class="bg-slate-50 border-b border-slate-200">
+<div class="a-card" style="overflow:hidden;">
+  <div style="overflow-x:auto;">
+    <table class="a-table">
+      <thead>
         <tr>
-          <th class="text-left px-4 py-3 font-semibold text-slate-600">Nom</th>
-          <th class="text-left px-4 py-3 font-semibold text-slate-600">Ville</th>
-          <th class="text-left px-4 py-3 font-semibold text-slate-600">Téléphone</th>
-          <th class="text-left px-4 py-3 font-semibold text-slate-600">Note</th>
-          <th class="text-left px-4 py-3 font-semibold text-slate-600">GPS</th>
-          <th class="text-right px-4 py-3 font-semibold text-slate-600">Actions</th>
+          <th>Nom</th><th>Ville</th><th>Téléphone</th><th>Note</th><th>GPS</th>
+          <th style="text-align:right;">Actions</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody>
         {% for cab in cabinets %}
         {% set idx = loop.index0 + (page - 1) * 30 %}
-        <tr class="hover:bg-slate-50 transition-colors">
-          <td class="px-4 py-3">
-            <div class="font-medium text-slate-800 max-w-[250px] truncate" title="{{ cab.name }}">
-              {{ cab.name }}
-            </div>
-            {% if cab.address %}
-            <div class="text-xs text-slate-400 truncate max-w-[250px]">{{ cab.address }}</div>
-            {% endif %}
+        <tr>
+          <td>
+            <div style="font-weight:600;color:#1e293b;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ cab.name }}">{{ cab.name }}</div>
+            {% if cab.address %}<div style="font-size:11.5px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px;">{{ cab.address }}</div>{% endif %}
           </td>
-          <td class="px-4 py-3">
-            <div class="text-slate-700">{{ cab.city }}</div>
-            {% if cab.postal_code %}
-            <div class="text-xs text-slate-400">{{ cab.postal_code }}</div>
-            {% endif %}
+          <td>
+            <div style="color:#334155;">{{ cab.city }}</div>
+            {% if cab.postal_code %}<div style="font-size:11.5px;color:#94a3b8;">{{ cab.postal_code }}</div>{% endif %}
           </td>
-          <td class="px-4 py-3 text-slate-600">
-            {% if cab.phone %}
-              <a href="tel:{{ cab.phone }}" class="text-blue-600 hover:underline">{{ cab.phone }}</a>
-            {% else %}
-              <span class="text-slate-300">—</span>
-            {% endif %}
+          <td>
+            {% if cab.phone %}<a href="tel:{{ cab.phone }}" style="color:var(--ag);text-decoration:none;font-weight:500;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">{{ cab.phone }}</a>
+            {% else %}<span style="color:#e2e8f0;">—</span>{% endif %}
           </td>
-          <td class="px-4 py-3">
+          <td>
             {% if cab.rating %}
-            <div class="flex items-center gap-1">
-              <span class="text-yellow-500 text-xs">★</span>
-              <span class="text-slate-700 font-medium">{{ cab.rating }}</span>
-              {% if cab.reviews_count %}
-              <span class="text-slate-400 text-xs">({{ cab.reviews_count }})</span>
-              {% endif %}
+            <div style="display:inline-flex;align-items:center;gap:4px;background:#fffbeb;border:1px solid rgba(217,119,6,.15);border-radius:100px;padding:3px 8px;">
+              <span style="color:#d97706;font-size:11px;">★</span>
+              <span style="font-size:12.5px;font-weight:600;color:#92400e;">{{ cab.rating }}</span>
+              {% if cab.reviews_count %}<span style="font-size:11px;color:#d97706;">({{ cab.reviews_count }})</span>{% endif %}
             </div>
-            {% else %}
-            <span class="text-slate-300">—</span>
-            {% endif %}
+            {% else %}<span style="color:#e2e8f0;">—</span>{% endif %}
           </td>
-          <td class="px-4 py-3">
+          <td>
             {% if cab.lat and cab.lng %}
-            <span class="inline-flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-              </svg>
-              OK
+            <span style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:#059669;background:#ecfdf5;border:1px solid rgba(5,150,105,.15);padding:3px 8px;border-radius:100px;">
+              <svg width="10" height="10" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
+              GPS
             </span>
-            {% else %}
-            <span class="text-slate-300 text-xs">—</span>
-            {% endif %}
+            {% else %}<span style="color:#e2e8f0;font-size:12px;">—</span>{% endif %}
           </td>
-          <td class="px-4 py-3">
-            <div class="flex items-center justify-end gap-1">
+          <td>
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;">
               {% if cab.slug %}
-              <a href="/cabinets/{{ cab.slug }}/" target="_blank"
-                 title="Voir la page publique"
-                 class="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded transition-colors">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                </svg>
+              <a href="/cabinets/{{ cab.slug }}/" target="_blank" title="Voir la page publique"
+                 style="color:#94a3b8;padding:6px;border-radius:6px;display:flex;align-items:center;transition:all .15s;"
+                 onmouseover="this.style.background='#f1f5f9';this.style.color='#475569'" onmouseout="this.style.background='';this.style.color='#94a3b8'">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
               </a>
               {% endif %}
               <a href="/admin/cabinets/{{ idx }}/edit"
-                 class="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 hover:bg-blue-50 rounded transition-colors">
-                Modifier
-              </a>
+                 style="font-size:12px;font-weight:600;color:var(--ag);text-decoration:none;padding:5px 10px;border-radius:6px;transition:background .15s;"
+                 onmouseover="this.style.background='rgba(10,124,92,.08)'" onmouseout="this.style.background=''">Modifier</a>
               <form method="POST" action="/admin/cabinets/{{ idx }}/delete"
                     onsubmit="return confirm('Supprimer « {{ cab.name }} » ?')">
-                <button type="submit"
-                        class="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 hover:bg-red-50 rounded transition-colors">
-                  Supprimer
-                </button>
+                <button type="submit" class="btn btn-danger" style="padding:5px 8px;">Supprimer</button>
               </form>
             </div>
           </td>
         </tr>
         {% else %}
-        <tr>
-          <td colspan="6" class="px-4 py-12 text-center text-slate-400">
-            Aucun cabinet trouvé.
-            <a href="/admin/cabinets/new" class="text-blue-600 hover:underline ml-1">En ajouter un</a>
-          </td>
-        </tr>
+        <tr><td colspan="6" style="text-align:center;padding:48px 16px;color:#94a3b8;font-size:13px;">
+          Aucun cabinet trouvé. <a href="/admin/cabinets/new" style="color:var(--ag);">En ajouter un</a>
+        </td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -164,22 +116,14 @@
 
   <!-- Pagination -->
   {% if pages > 1 %}
-  <div class="px-4 py-3 border-t border-slate-100 flex items-center justify-between text-sm">
-    <span class="text-slate-500">
-      Page {{ page }} / {{ pages }}
-    </span>
-    <div class="flex gap-1">
+  <div style="padding:12px 16px;border-top:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+    <span style="font-size:12.5px;color:#94a3b8;">Page {{ page }} / {{ pages }}</span>
+    <div style="display:flex;gap:6px;">
       {% if page > 1 %}
-      <a href="?page={{ page - 1 }}&q={{ q }}&city={{ city }}"
-         class="px-3 py-1.5 border border-slate-300 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors">
-        ← Précédent
-      </a>
+      <a href="?page={{ page - 1 }}&q={{ q }}&city={{ city }}" class="btn btn-ghost" style="font-size:12.5px;padding:7px 14px;">← Précédent</a>
       {% endif %}
       {% if page < pages %}
-      <a href="?page={{ page + 1 }}&q={{ q }}&city={{ city }}"
-         class="px-3 py-1.5 border border-slate-300 rounded-lg hover:bg-slate-50 text-slate-600 transition-colors">
-        Suivant →
-      </a>
+      <a href="?page={{ page + 1 }}&q={{ q }}&city={{ city }}" class="btn btn-ghost" style="font-size:12.5px;padding:7px 14px;">Suivant →</a>
       {% endif %}
     </div>
   </div>
