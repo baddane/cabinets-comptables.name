@@ -1,0 +1,196 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   DESIGN SYSTEM — Moderne & Coloré
+   Palette : Vert émeraude + Orange vif + Crème chaud
+============================================================ */
+
+:root {
+  --green:        #0A7C5C;
+  --green-light:  #12A87A;
+  --green-pale:   #E6F5F0;
+  --orange:       #F5622D;
+  --orange-light: #FF8255;
+  --orange-pale:  #FFF0EB;
+  --cream:        #FAF8F4;
+  --ink:          #1A1A2E;
+  --ink-muted:    #5A5A72;
+  --ink-faint:    #9898AA;
+  --border:       #E8E6E0;
+  --shadow-sm:    0 2px 8px rgba(26,26,46,0.06);
+  --shadow-md:    0 8px 32px rgba(26,26,46,0.10);
+  --shadow-lg:    0 24px 64px rgba(26,26,46,0.14);
+  --radius:       16px;
+  --radius-xl:    28px;
+}
+
+/* ——— Base ——— */
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--cream);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ——— Animations ——— */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-10px) rotate(1deg); }
+}
+
+@keyframes pulseRing {
+  0%   { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ——— Section helpers ——— */
+.section-label {
+  @apply inline-block text-xs font-semibold tracking-widest uppercase
+         text-green bg-green-pale px-3 py-1 rounded-full mb-3;
+}
+
+.section-title {
+  @apply font-display font-extrabold text-ink leading-tight tracking-tight;
+  font-size: clamp(26px, 3vw, 40px);
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+
+.section-subtitle {
+  @apply text-ink-muted font-light leading-relaxed;
+  font-size: 16px;
+}
+
+/* ——— Boutons ——— */
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2
+         bg-green text-white font-semibold rounded-xl
+         px-6 py-3 text-sm
+         transition-all duration-200
+         hover:-translate-y-0.5;
+  box-shadow: 0 4px 14px rgba(10,124,92,.3);
+}
+.btn-primary:hover { background-color: var(--green-light); box-shadow: 0 6px 20px rgba(10,124,92,.4); }
+
+.btn-orange {
+  @apply inline-flex items-center justify-center gap-2
+         bg-orange text-white font-semibold rounded-xl
+         px-6 py-3 text-sm
+         transition-all duration-200
+         hover:-translate-y-0.5;
+  box-shadow: 0 4px 14px rgba(245,98,45,.3);
+}
+.btn-orange:hover { background-color: var(--orange-light); }
+
+.btn-ghost {
+  @apply inline-flex items-center justify-center gap-2
+         bg-transparent text-ink-muted font-medium rounded-xl
+         px-5 py-2.5 text-sm border border-border
+         transition-all duration-200
+         hover:border-green hover:text-green;
+}
+
+/* ——— Cartes ——— */
+.card {
+  @apply bg-white rounded-3xl border border-border;
+  box-shadow: var(--shadow-sm);
+}
+
+.card-hover {
+  @apply transition-all duration-300 cursor-pointer;
+}
+.card-hover:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--green);
+}
+
+/* ——— Inputs ——— */
+.form-input {
+  @apply w-full bg-white border border-border rounded-xl
+         px-4 py-3 text-sm text-ink outline-none
+         transition-all duration-200
+         placeholder:text-ink-faint;
+  font-family: var(--font-dm-sans), system-ui;
+}
+.form-input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(10,124,92,.1);
+}
+
+.form-select {
+  @apply form-input appearance-none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239898AA' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+/* ——— Breadcrumb ——— */
+.breadcrumb { @apply flex items-center gap-1 text-sm text-ink-faint flex-wrap mb-6; }
+.breadcrumb a { @apply hover:text-green transition-colors; }
+.breadcrumb-sep { @apply text-ink-faint/50; }
+
+/* ——— Badge premium ——— */
+.badge-premium {
+  @apply inline-flex items-center gap-1.5 text-xs font-semibold
+         text-green bg-green-pale px-2.5 py-1 rounded-full;
+}
+
+/* ——— Stars ——— */
+.stars { @apply flex items-center gap-0.5 text-amber-400; }
+
+/* ——— Container ——— */
+.container-xl {
+  @apply max-w-screen-xl mx-auto px-10;
+}
+@media (max-width: 1024px) { .container-xl { @apply px-6; } }
+@media (max-width:  640px) { .container-xl { @apply px-5; } }
+
+/* ——— Lead form ——— */
+.lead-form { @apply card p-8; }
+.lead-form--sticky { @apply sticky top-24; }
+
+/* ——— Cabinet card ——— */
+.cabinet-card {
+  @apply card card-hover p-5 flex flex-col gap-3;
+}
+
+/* ——— Cabinet page layout ——— */
+.cabinet-layout {
+  @apply grid gap-10 mt-8;
+  grid-template-columns: 1fr 340px;
+}
+@media (max-width: 1024px) { .cabinet-layout { @apply grid-cols-1; } }
+
+/* ——— City page layout ——— */
+.city-header { @apply mb-8; }
+.city-stats  { @apply flex items-center gap-3 text-sm text-ink-muted mt-3; }
+
+/* ——— Dashboard ——— */
+.dashboard-layout {
+  @apply flex min-h-screen;
+}
+.dashboard-content {
+  @apply flex-1 p-8 overflow-auto;
+  background: var(--cream);
+}
+
+/* ——— Responsive nav hide ——— */
+@media (max-width: 768px) {
+  .nav-desktop { display: none; }
+}
