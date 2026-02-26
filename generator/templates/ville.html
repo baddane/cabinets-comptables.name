@@ -7,78 +7,149 @@
 {% block og_description %}Annuaire des experts-comptables à {{ city_name }}. Adresse, téléphone, avis. Trouvez votre cabinet comptable à {{ city_name }}.{% endblock %}
 {% block og_url %}/villes/{{ city_slug }}/{% endblock %}
 
+{% block head %}
+<style>
+  .city-hero {
+    background: linear-gradient(135deg, var(--green) 0%, #0d5c44 100%);
+    padding: 56px 40px 68px;
+    position: relative; overflow: hidden;
+  }
+  .city-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .city-hero-inner { max-width: 1240px; margin: 0 auto; position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+
+  .ville-layout { max-width: 1240px; margin: 0 auto; padding: 48px 40px; display: grid; grid-template-columns: 1fr 300px; gap: 40px; }
+  @media (max-width: 1024px) { .ville-layout { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .ville-layout { padding: 32px 20px; } .city-hero { padding: 40px 20px 52px; } }
+
+  .cabinet-card {
+    background: white; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+    padding: 22px; display: flex; align-items: flex-start; gap: 16px;
+    transition: box-shadow .25s, border-color .25s, transform .2s;
+  }
+  .cabinet-card:hover { box-shadow: var(--shadow-md); border-color: var(--green); transform: translateY(-2px); }
+
+  .cabinet-avatar {
+    width: 52px; height: 52px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px;
+    color: white; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--ink) 0%, #2d2d4e 100%);
+  }
+  .cabinet-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600; padding: 3px 9px;
+    border-radius: 100px;
+  }
+
+  /* Sidebar */
+  .sidebar-sticky { position: sticky; top: 88px; display: flex; flex-direction: column; gap: 20px; }
+  .sidebar-widget {
+    background: white; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .sidebar-widget-header {
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700;
+    color: var(--ink); text-transform: uppercase; letter-spacing: .08em;
+  }
+  .sidebar-widget-body { padding: 14px; }
+  .city-link {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 13px; color: var(--ink-muted); text-decoration: none;
+    padding: 7px 8px; border-radius: 8px; transition: all .15s;
+  }
+  .city-link:hover { color: var(--green); background: var(--green-pale); }
+  .city-link-count { font-size: 11px; color: var(--ink-faint); font-weight: 500; }
+</style>
+{% endblock %}
+
+{% block main_class %}p-0{% endblock %}
+
 {% block content %}
 
-<!-- Breadcrumb -->
-<nav class="breadcrumb flex flex-wrap items-center text-sm text-gray-500 mb-6">
-  <a href="/" class="hover:text-blue-600">Accueil</a>
-  <a href="/villes/" class="hover:text-blue-600">Cabinets Comptables</a>
-  <span class="text-gray-700 font-medium">{{ city_name }}</span>
-</nav>
-
-<!-- En-tête ville -->
-<div class="flex items-start justify-between mb-8 gap-4">
-  <div>
-    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-      Cabinets Comptables à {{ city_name }}
-    </h1>
-    <p class="text-gray-500">
-      {{ city_count }} cabinet{% if city_count > 1 %}s{% endif %} d'expertise comptable référencé{% if city_count > 1 %}s{% endif %}
-    </p>
+<!-- Hero ville -->
+<section class="city-hero">
+  <div class="city-hero-inner">
+    <div>
+      <nav style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.6);margin-bottom:16px;flex-wrap:wrap;">
+        <a href="/" style="color:rgba(255,255,255,.75);text-decoration:none;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,.75)'">Accueil</a>
+        <span>›</span>
+        <a href="/villes/" style="color:rgba(255,255,255,.75);text-decoration:none;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,.75)'">Cabinets Comptables</a>
+        <span>›</span>
+        <span style="color:white;">{{ city_name }}</span>
+      </nav>
+      <h1 style="font-family:'Syne',sans-serif;font-size:clamp(24px,3.5vw,40px);font-weight:800;color:white;line-height:1.15;margin-bottom:10px;">
+        Cabinets Comptables à {{ city_name }}
+      </h1>
+      <p style="color:rgba(255,255,255,.75);font-size:15px;">
+        {{ city_count }} cabinet{% if city_count > 1 %}s{% endif %} d'expertise comptable référencé{% if city_count > 1 %}s{% endif %}
+      </p>
+    </div>
+    <div style="background:rgba(255,255,255,.12);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:20px 28px;text-align:center;flex-shrink:0;">
+      <div style="font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:white;line-height:1;">{{ city_count }}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:4px;">cabinets<br>référencés</div>
+    </div>
   </div>
-  <div class="hidden md:flex items-center gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-4 py-2">
-    <span class="text-2xl font-bold">{{ city_count }}</span>
-    <span class="text-xs text-blue-500 leading-tight">cabinets<br>référencés</span>
-  </div>
-</div>
+</section>
 
 <!-- ADSENSE_SLOT_VILLE_TOP -->
 
-<!-- Liste des cabinets -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Layout -->
+<div class="ville-layout">
 
-  <!-- Colonne principale -->
-  <div class="lg:col-span-2 space-y-4">
+  <!-- Liste cabinets -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
     {% for cabinet in cabinets %}
-    <article class="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition p-5">
-      <div class="flex items-start gap-4">
-        <!-- Avatar lettre -->
-        <div class="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-lg"
-             style="background-color: #1e3a5f;">
-          {{ cabinet.name[0] | upper }}
-        </div>
-        <div class="flex-1 min-w-0">
-          <h2 class="font-bold text-gray-900 text-lg mb-1">
-            <a href="/cabinets/{{ cabinet.slug }}/" class="hover:text-blue-700 transition">
+    <article class="cabinet-card">
+      <div class="cabinet-avatar">{{ cabinet.name[0] | upper }}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px;flex-wrap:wrap;">
+          <h2 style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--ink);margin:0;">
+            <a href="/cabinets/{{ cabinet.slug }}/" style="color:inherit;text-decoration:none;"
+               onmouseover="this.style.color='var(--green)'" onmouseout="this.style.color='inherit'">
               {{ cabinet.name }}
             </a>
           </h2>
+          {% if cabinet.rating %}
+          <span class="cabinet-badge" style="background:rgba(245,190,45,.12);color:#b8860b;border:1px solid rgba(245,190,45,.25);flex-shrink:0;">
+            ★ {{ cabinet.rating }}/5
+          </span>
+          {% endif %}
+        </div>
 
-          <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mb-3">
-            {% if cabinet.address %}
-            <span>📍 {{ cabinet.address }}, {{ cabinet.postal_code }} {{ city_name }}</span>
-            {% endif %}
-            {% if cabinet.phone %}
-            <span>📞 <a href="tel:{{ cabinet.phone | replace(' ', '') }}" class="hover:text-blue-600">{{ cabinet.phone }}</a></span>
-            {% endif %}
-          </div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--ink-muted);margin-bottom:14px;">
+          {% if cabinet.address %}
+          <span style="display:flex;align-items:center;gap:5px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            {{ cabinet.address }}, {{ cabinet.postal_code }}
+          </span>
+          {% endif %}
+          {% if cabinet.phone %}
+          <a href="tel:{{ cabinet.phone | replace(' ', '') }}" style="display:flex;align-items:center;gap:5px;color:var(--green);text-decoration:none;font-weight:500;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.8 19.79 19.79 0 01.22 4.16 2 2 0 012.22 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 9.91a16 16 0 006.29 6.29l1.28-1.28a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            {{ cabinet.phone }}
+          </a>
+          {% endif %}
+          {% if cabinet.website %}
+          <span class="cabinet-badge" style="background:var(--green-pale);color:var(--green);border:1px solid rgba(10,124,92,.15);">
+            🌐 Site web
+          </span>
+          {% endif %}
+        </div>
 
-          <div class="flex items-center gap-3">
-            {% if cabinet.rating %}
-            <span class="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
-              ★ {{ cabinet.rating }}/5
-            </span>
-            {% endif %}
-            {% if cabinet.website %}
-            <span class="text-xs bg-green-50 text-green-700 border border-green-200 rounded-full px-2 py-0.5">
-              🌐 Site web
-            </span>
-            {% endif %}
-            <a href="/cabinets/{{ cabinet.slug }}/"
-               class="ml-auto text-sm text-blue-600 hover:text-blue-800 font-medium hover:underline">
-              Voir la fiche →
-            </a>
-          </div>
+        <div style="display:flex;align-items:center;justify-content:flex-end;">
+          <a href="/cabinets/{{ cabinet.slug }}/"
+             style="font-size:13px;font-weight:600;color:var(--green);text-decoration:none;display:flex;align-items:center;gap:4px;transition:gap .2s;"
+             onmouseover="this.style.gap='8px'" onmouseout="this.style.gap='4px'">
+            Voir la fiche
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
         </div>
       </div>
     </article>
@@ -86,34 +157,46 @@
   </div>
 
   <!-- Sidebar -->
-  <aside class="space-y-6">
+  <aside>
+    <div class="sidebar-sticky">
 
-    <!-- ADSENSE_SLOT_VILLE_SIDEBAR -->
+      <!-- ADSENSE_SLOT_VILLE_SIDEBAR -->
 
-    <!-- Autres villes -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-      <h3 class="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wide">Autres villes</h3>
-      <ul class="space-y-2">
-        {% for other_city in other_cities %}
-        <li>
-          <a href="/villes/{{ other_city.slug }}/"
-             class="flex items-center justify-between text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg px-2 py-1.5 transition">
+      <!-- CTA -->
+      <div style="background:linear-gradient(135deg,var(--green),#0d5c44);border-radius:var(--radius);padding:24px;">
+        <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:white;margin-bottom:8px;">Comparer les cabinets</div>
+        <p style="font-size:12px;color:rgba(255,255,255,.75);line-height:1.6;margin-bottom:16px;">Cliquez sur une fiche pour voir les coordonnées, la carte et les avis de chaque cabinet.</p>
+        <a href="/villes/" style="display:block;text-align:center;background:rgba(255,255,255,.15);color:white;font-weight:600;padding:9px;border-radius:8px;font-size:13px;text-decoration:none;border:1px solid rgba(255,255,255,.25);transition:background .2s;"
+           onmouseover="this.style.background='rgba(255,255,255,.25)'" onmouseout="this.style.background='rgba(255,255,255,.15)'">
+          Toutes les villes →
+        </a>
+      </div>
+
+      <!-- Autres villes -->
+      <div class="sidebar-widget">
+        <div class="sidebar-widget-header">Autres villes</div>
+        <div class="sidebar-widget-body">
+          {% for other_city in other_cities %}
+          <a href="/villes/{{ other_city.slug }}/" class="city-link">
             <span>{{ other_city.name }}</span>
-            <span class="text-xs text-gray-400">{{ other_city.count }}</span>
+            <span class="city-link-count">{{ other_city.count }}</span>
           </a>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
+          {% endfor %}
+        </div>
+      </div>
 
-    <!-- Info SEO -->
-    <div class="bg-blue-50 border border-blue-100 rounded-xl p-5">
-      <h3 class="font-bold text-blue-900 mb-2 text-sm">Expert-comptable à {{ city_name }}</h3>
-      <p class="text-xs text-blue-700 leading-relaxed">
-        Les cabinets comptables à {{ city_name }} proposent des services de comptabilité générale,
-        établissement du bilan, liasse fiscale, déclarations TVA, conseil fiscal et gestion de la paie.
-        L'expert-comptable est un partenaire clé pour les TPE et PME de {{ city_name }}.
-      </p>
+      <!-- Info SEO -->
+      <div class="sidebar-widget">
+        <div class="sidebar-widget-header">Expert-comptable à {{ city_name }}</div>
+        <div class="sidebar-widget-body">
+          <p style="font-size:12px;color:var(--ink-muted);line-height:1.75;">
+            Les cabinets comptables à {{ city_name }} proposent des services de comptabilité générale,
+            établissement du bilan, liasse fiscale, déclarations TVA, conseil fiscal et gestion de la paie.
+            L'expert-comptable est un partenaire clé pour les TPE et PME de {{ city_name }}.
+          </p>
+        </div>
+      </div>
+
     </div>
   </aside>
 </div>

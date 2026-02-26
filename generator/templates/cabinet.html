@@ -7,290 +7,367 @@
 {% block og_description %}{{ cabinet.name }} : cabinet d'expertise comptable à {{ cabinet.city }}. Comptabilité, bilan, liasse fiscale.{% endblock %}
 {% block og_url %}/cabinets/{{ cabinet.slug }}/{% endblock %}
 
+{% block head %}
+<style>
+  .cabinet-layout { max-width: 1240px; margin: 0 auto; padding: 48px 40px; display: grid; grid-template-columns: 1fr 300px; gap: 40px; }
+  @media (max-width: 1024px) { .cabinet-layout { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .cabinet-layout { padding: 24px 20px; } }
+
+  .card {
+    background: white; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+    overflow: hidden; margin-bottom: 20px;
+  }
+  .card-header {
+    padding: 20px 24px; border-bottom: 1px solid var(--border);
+    font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700;
+    color: var(--ink); text-transform: uppercase; letter-spacing: .08em;
+  }
+  .card-body { padding: 24px; }
+
+  .info-row {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .info-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .info-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 16px;
+  }
+  .info-label { font-size: 10px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 4px; font-weight: 600; }
+  .info-value { font-size: 14px; color: var(--ink); font-weight: 500; }
+
+  .nearby-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px; border-radius: 10px; text-decoration: none;
+    transition: background .15s;
+  }
+  .nearby-link:hover { background: var(--green-pale); }
+  .nearby-avatar {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--ink), #2d2d4e);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 13px; flex-shrink: 0;
+  }
+
+  .sidebar-sticky { position: sticky; top: 88px; }
+  .social-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 600; padding: 6px 12px;
+    border-radius: 8px; text-decoration: none; transition: all .15s;
+  }
+</style>
+{% endblock %}
+
+{% block main_class %}p-0{% endblock %}
+
 {% block content %}
 
-<!-- Breadcrumb -->
-<nav class="breadcrumb flex flex-wrap items-center text-sm text-gray-500 mb-6 gap-y-1">
-  <a href="/" class="hover:text-blue-600">Accueil</a>
-  <a href="/villes/" class="hover:text-blue-600">Cabinets Comptables</a>
-  <a href="/villes/{{ city_slug }}/" class="hover:text-blue-600">{{ cabinet.city }}</a>
-  <span class="text-gray-700 font-medium truncate">{{ cabinet.name }}</span>
-</nav>
+<!-- Breadcrumb + Hero header -->
+<div style="background:var(--cream);border-bottom:1px solid var(--border);padding:24px 40px;">
+  <div style="max-width:1240px;margin:0 auto;">
+    <nav style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-faint);margin-bottom:20px;flex-wrap:wrap;">
+      <a href="/" style="color:var(--ink-muted);text-decoration:none;" onmouseover="this.style.color='var(--green)'" onmouseout="this.style.color='var(--ink-muted)'">Accueil</a>
+      <span>›</span>
+      <a href="/villes/" style="color:var(--ink-muted);text-decoration:none;" onmouseover="this.style.color='var(--green)'" onmouseout="this.style.color='var(--ink-muted)'">Cabinets Comptables</a>
+      <span>›</span>
+      <a href="/villes/{{ city_slug }}/" style="color:var(--ink-muted);text-decoration:none;" onmouseover="this.style.color='var(--green)'" onmouseout="this.style.color='var(--ink-muted)'">{{ cabinet.city }}</a>
+      <span>›</span>
+      <span style="color:var(--ink);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;">{{ cabinet.name }}</span>
+    </nav>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Header cabinet -->
+    <div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;">
+      {% if cabinet.featured_image %}
+      <img src="{{ cabinet.featured_image }}" alt="{{ cabinet.name }}"
+           style="width:72px;height:72px;border-radius:18px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;">
+      {% else %}
+      <div style="width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,var(--ink),#2d2d4e);display:flex;align-items:center;justify-content:center;color:white;font-family:'Syne',sans-serif;font-weight:800;font-size:28px;flex-shrink:0;box-shadow:0 8px 24px rgba(26,26,46,.2);">
+        {{ cabinet.name[0] | upper }}
+      </div>
+      {% endif %}
 
-  <!-- Fiche principale -->
-  <div class="lg:col-span-2 space-y-6">
-
-    <!-- En-tête cabinet -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-      <div class="flex items-start gap-5">
-        <!-- Avatar ou image -->
-        {% if cabinet.featured_image %}
-        <img src="{{ cabinet.featured_image }}" alt="{{ cabinet.name }}"
-             class="w-16 h-16 rounded-xl flex-shrink-0 object-cover border border-gray-200">
-        {% else %}
-        <div class="w-16 h-16 rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-2xl"
-             style="background-color: #1e3a5f;">
-          {{ cabinet.name[0] | upper }}
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px;">
+          <h1 style="font-family:'Syne',sans-serif;font-size:clamp(20px,3vw,30px);font-weight:800;color:var(--ink);margin:0;">{{ cabinet.name }}</h1>
+          {% if cabinet.category %}
+          <span style="font-size:11px;font-weight:600;background:var(--green-pale);color:var(--green);padding:3px 10px;border-radius:100px;">{{ cabinet.category }}</span>
+          {% endif %}
         </div>
-        {% endif %}
-        <div class="flex-1 min-w-0">
-          <div class="flex flex-wrap items-center gap-2 mb-1">
-            <h1 class="text-2xl font-bold text-gray-900">{{ cabinet.name }}</h1>
-            {% if cabinet.category %}
-            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{{ cabinet.category }}</span>
-            {% endif %}
-          </div>
-          <p class="text-gray-500 mb-3">Cabinet Comptable à {{ cabinet.city }}</p>
+        <p style="font-size:14px;color:var(--ink-muted);margin-bottom:12px;">Cabinet Comptable à {{ cabinet.city }}{% if cabinet.postal_code %} ({{ cabinet.postal_code }}){% endif %}</p>
+
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;">
           {% if cabinet.rating %}
-          <div class="flex items-center gap-2">
-            <span class="text-amber-400 text-lg">★</span>
-            <span class="font-semibold text-gray-800">{{ cabinet.rating }}/5</span>
-            {% if cabinet.rating_info %}
-            <span class="text-xs text-gray-400">— {{ cabinet.rating_info }}</span>
-            {% elif cabinet.reviews_count and cabinet.reviews_count > 0 %}
-            <span class="text-xs text-gray-400">— {{ cabinet.reviews_count }} avis</span>
+          <div style="display:flex;align-items:center;gap:6px;background:rgba(245,190,45,.1);border:1px solid rgba(245,190,45,.25);border-radius:100px;padding:5px 12px;">
+            <span style="color:#d4a017;font-size:14px;">★</span>
+            <span style="font-size:13px;font-weight:700;color:var(--ink);">{{ cabinet.rating }}/5</span>
+            {% if cabinet.reviews_count and cabinet.reviews_count > 0 %}
+            <span style="font-size:11px;color:var(--ink-faint);">{{ cabinet.reviews_count }} avis</span>
+            {% elif cabinet.rating_info %}
+            <span style="font-size:11px;color:var(--ink-faint);">{{ cabinet.rating_info }}</span>
             {% endif %}
           </div>
           {% endif %}
           {% if cabinet.open_hours %}
-          <p class="text-sm text-gray-500 mt-1">🕐 {{ cabinet.open_hours }}</p>
+          <span style="font-size:12px;color:var(--ink-muted);display:flex;align-items:center;gap:5px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            {{ cabinet.open_hours }}
+          </span>
           {% endif %}
           {% if cabinet.google_maps_url %}
           <a href="{{ cabinet.google_maps_url }}" target="_blank" rel="nofollow noopener"
-             class="inline-flex items-center gap-1 text-xs text-blue-500 hover:underline mt-1">
-            📍 Voir sur Google Maps
+             style="font-size:12px;color:var(--green);text-decoration:none;display:flex;align-items:center;gap:4px;"
+             onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Voir sur Google Maps
           </a>
           {% endif %}
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Layout -->
+<div class="cabinet-layout">
+
+  <!-- Colonne principale -->
+  <div>
 
     <!-- Coordonnées -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-      <h2 class="font-bold text-gray-900 mb-4 text-lg">Coordonnées</h2>
-      <dl class="space-y-4">
+    <div class="card">
+      <div class="card-header">Coordonnées</div>
+      <div class="card-body" style="padding-top:8px;padding-bottom:8px;">
         {% if cabinet.address %}
-        <div class="flex items-start gap-3">
-          <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 flex-shrink-0 mt-0.5">📍</div>
+        <div class="info-row">
+          <div class="info-icon" style="background:var(--green-pale);">📍</div>
           <div>
-            <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Adresse</dt>
-            <dd class="text-gray-700">{{ cabinet.address }}<br>{{ cabinet.postal_code }} {{ cabinet.city }}</dd>
+            <div class="info-label">Adresse</div>
+            <div class="info-value">{{ cabinet.address }}<br>{{ cabinet.postal_code }} {{ cabinet.city }}</div>
           </div>
         </div>
         {% endif %}
-
         {% if cabinet.phone %}
-        <div class="flex items-start gap-3">
-          <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center text-green-600 flex-shrink-0 mt-0.5">📞</div>
+        <div class="info-row">
+          <div class="info-icon" style="background:#f0fdf4;">📞</div>
           <div>
-            <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Téléphone</dt>
-            <dd>
+            <div class="info-label">Téléphone</div>
+            <div class="info-value">
               <a href="tel:{{ cabinet.phone | replace(' ', '') }}"
-                 class="text-blue-600 hover:underline font-medium text-lg">
+                 style="color:var(--green);font-weight:700;font-size:18px;text-decoration:none;"
+                 onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
                 {{ cabinet.phone }}
               </a>
-            </dd>
+            </div>
           </div>
         </div>
         {% endif %}
-
         {% if cabinet.website %}
-        <div class="flex items-start gap-3">
-          <div class="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center text-purple-600 flex-shrink-0 mt-0.5">🌐</div>
+        <div class="info-row">
+          <div class="info-icon" style="background:#faf5ff;">🌐</div>
           <div>
-            <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Site web</dt>
-            <dd>
+            <div class="info-label">Site web</div>
+            <div class="info-value">
               <a href="{{ cabinet.website }}" target="_blank" rel="nofollow noopener"
-                 class="text-blue-600 hover:underline">
+                 style="color:var(--green);text-decoration:none;"
+                 onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
                 {{ cabinet.website | replace('https://', '') | replace('http://', '') }}
               </a>
-            </dd>
+            </div>
           </div>
         </div>
         {% endif %}
-
         {% if cabinet.email %}
-        <div class="flex items-start gap-3">
-          <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center text-amber-600 flex-shrink-0 mt-0.5">✉️</div>
+        <div class="info-row">
+          <div class="info-icon" style="background:#fffbeb;">✉️</div>
           <div>
-            <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">E-mail</dt>
-            <dd>
-              <a href="mailto:{{ cabinet.email }}" class="text-blue-600 hover:underline">
+            <div class="info-label">E-mail</div>
+            <div class="info-value">
+              <a href="mailto:{{ cabinet.email }}" style="color:var(--green);text-decoration:none;"
+                 onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
                 {{ cabinet.email }}
               </a>
-            </dd>
+            </div>
           </div>
         </div>
         {% endif %}
-
         {% if cabinet.facebook or cabinet.instagram or cabinet.twitter %}
-        <div class="flex items-start gap-3">
-          <div class="w-8 h-8 bg-sky-50 rounded-lg flex items-center justify-center text-sky-600 flex-shrink-0 mt-0.5">📱</div>
+        <div class="info-row">
+          <div class="info-icon" style="background:#eff6ff;">📱</div>
           <div>
-            <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Réseaux sociaux</dt>
-            <dd class="flex flex-wrap gap-2 mt-1">
+            <div class="info-label">Réseaux sociaux</div>
+            <div class="info-value" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
               {% if cabinet.facebook %}
               <a href="{{ cabinet.facebook }}" target="_blank" rel="nofollow noopener"
-                 class="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg hover:bg-blue-100 transition">
+                 class="social-badge" style="background:#eff6ff;color:#1d4ed8;"
+                 onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
                 Facebook
               </a>
               {% endif %}
               {% if cabinet.instagram %}
               <a href="{{ cabinet.instagram }}" target="_blank" rel="nofollow noopener"
-                 class="inline-flex items-center gap-1 text-xs bg-pink-50 text-pink-700 px-2 py-1 rounded-lg hover:bg-pink-100 transition">
+                 class="social-badge" style="background:#fdf2f8;color:#9d174d;"
+                 onmouseover="this.style.background='#fce7f3'" onmouseout="this.style.background='#fdf2f8'">
                 Instagram
               </a>
               {% endif %}
               {% if cabinet.twitter %}
               <a href="{{ cabinet.twitter }}" target="_blank" rel="nofollow noopener"
-                 class="inline-flex items-center gap-1 text-xs bg-slate-50 text-slate-700 px-2 py-1 rounded-lg hover:bg-slate-100 transition">
+                 class="social-badge" style="background:#f8fafc;color:#334155;"
+                 onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
                 Twitter / X
               </a>
               {% endif %}
-            </dd>
+            </div>
           </div>
         </div>
         {% endif %}
-      </dl>
+      </div>
     </div>
 
-    <!-- Google Maps embed -->
+    <!-- Carte -->
     {% if cabinet.lat and cabinet.lng %}
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-      <h2 class="font-bold text-gray-900 mb-4 text-lg">Localisation</h2>
-      <div class="rounded-lg overflow-hidden border border-gray-200" style="height:300px;">
+    <div class="card">
+      <div class="card-header">Localisation</div>
+      <div style="height:300px;overflow:hidden;">
         <iframe
           width="100%"
           height="300"
-          style="border:0;"
+          style="border:0;display:block;"
           loading="lazy"
           referrerpolicy="no-referrer-when-downgrade"
           src="https://maps.google.com/maps?q={{ cabinet.lat }},{{ cabinet.lng }}&z=16&output=embed"
           title="Localisation de {{ cabinet.name }}">
         </iframe>
       </div>
-      <p class="text-xs text-gray-400 mt-2">
+      <div style="padding:12px 24px;font-size:12px;color:var(--ink-faint);border-top:1px solid var(--border);">
         {% if cabinet.address %}{{ cabinet.address }}, {% endif %}{{ cabinet.postal_code }} {{ cabinet.city }}
-      </p>
+      </div>
     </div>
     {% elif cabinet.address %}
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-      <h2 class="font-bold text-gray-900 mb-4 text-lg">Localisation</h2>
-      <div class="rounded-lg overflow-hidden border border-gray-200" style="height:300px;">
+    <div class="card">
+      <div class="card-header">Localisation</div>
+      <div style="height:300px;overflow:hidden;">
         <iframe
           width="100%"
           height="300"
-          style="border:0;"
+          style="border:0;display:block;"
           loading="lazy"
           referrerpolicy="no-referrer-when-downgrade"
           src="https://maps.google.com/maps?q={{ (cabinet.address + ', ' + cabinet.postal_code + ' ' + cabinet.city) | urlencode }}&output=embed"
           title="Localisation de {{ cabinet.name }}">
         </iframe>
       </div>
-      <p class="text-xs text-gray-400 mt-2">
+      <div style="padding:12px 24px;font-size:12px;color:var(--ink-faint);border-top:1px solid var(--border);">
         {{ cabinet.address }}, {{ cabinet.postal_code }} {{ cabinet.city }}
-      </p>
+      </div>
     </div>
     {% endif %}
 
     <!-- Description SEO -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-      <h2 class="font-bold text-gray-900 mb-3 text-lg">
-        {{ cabinet.name }} — Expert-Comptable à {{ cabinet.city }}
-      </h2>
-      <div class="text-sm text-gray-600 leading-relaxed space-y-3">
-        <p>
+    <div class="card">
+      <div class="card-header">À propos</div>
+      <div class="card-body" style="font-size:14px;color:var(--ink-muted);line-height:1.8;">
+        <h2 style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--ink);margin-bottom:14px;">
+          {{ cabinet.name }} — Expert-Comptable à {{ cabinet.city }}
+        </h2>
+        <p style="margin-bottom:12px;">
           <strong>{{ cabinet.name }}</strong> est un cabinet d'<strong>expertise comptable</strong>
           situé à <strong>{{ cabinet.city }}</strong>{% if cabinet.postal_code %} ({{ cabinet.postal_code }}){% endif %}.
           Ce cabinet propose des services de <strong>comptabilité</strong>, d'établissement du
           <strong>bilan annuel</strong>, de la <strong>liasse fiscale</strong> et du conseil aux entreprises.
         </p>
-        <p>
+        <p style="margin-bottom:12px;">
           Que vous soyez une TPE, une PME, un artisan, un commerçant ou une profession libérale,
           ce cabinet comptable à {{ cabinet.city }} peut vous accompagner dans la gestion de votre
           comptabilité et vos obligations fiscales et sociales.
         </p>
-        <p class="text-xs text-gray-400">
+        <p style="font-size:11px;color:var(--ink-faint);">
           Informations extraites de sources publiques. En cas d'erreur, veuillez nous contacter.
         </p>
       </div>
     </div>
+
   </div>
 
   <!-- Sidebar -->
-  <aside class="space-y-6">
+  <aside>
+    <div class="sidebar-sticky">
 
-    <!-- CTA contact -->
-    <div class="bg-navy-700 rounded-xl p-6 text-white" style="background-color:#1e3a5f;">
-      <h3 class="font-bold mb-2">Contacter ce cabinet</h3>
-      {% if cabinet.phone %}
-      <a href="tel:{{ cabinet.phone | replace(' ', '') }}"
-         class="flex items-center gap-2 bg-white text-navy-800 font-bold rounded-lg px-4 py-3 text-center hover:bg-blue-50 transition mb-3 w-full justify-center"
-         style="color:#1e3a5f;">
-        📞 {{ cabinet.phone }}
-      </a>
-      {% else %}
-      <p class="text-blue-200 text-sm">Numéro non disponible</p>
-      {% endif %}
-      {% if cabinet.website %}
-      <a href="{{ cabinet.website }}" target="_blank" rel="nofollow noopener"
-         class="flex items-center gap-2 bg-blue-600 text-white font-medium rounded-lg px-4 py-2 text-center hover:bg-blue-700 transition w-full justify-center text-sm">
-        🌐 Visiter le site web
-      </a>
-      {% endif %}
-    </div>
+      <!-- CTA Contact -->
+      <div style="background:linear-gradient(135deg,var(--green),#0d5c44);border-radius:var(--radius);padding:24px;margin-bottom:20px;">
+        <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:white;margin-bottom:4px;">Contacter ce cabinet</div>
+        <p style="font-size:12px;color:rgba(255,255,255,.75);margin-bottom:16px;">Prenez contact directement pour un devis gratuit.</p>
+        {% if cabinet.phone %}
+        <a href="tel:{{ cabinet.phone | replace(' ', '') }}"
+           style="display:flex;align-items:center;justify-content:center;gap:8px;background:white;color:var(--green);font-weight:700;font-size:14px;border-radius:10px;padding:13px 16px;text-decoration:none;margin-bottom:10px;transition:all .2s;"
+           onmouseover="this.style.background='var(--green-pale)'" onmouseout="this.style.background='white'">
+          📞 {{ cabinet.phone }}
+        </a>
+        {% else %}
+        <div style="background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:13px;border-radius:10px;padding:12px;text-align:center;margin-bottom:10px;">
+          Numéro non disponible
+        </div>
+        {% endif %}
+        {% if cabinet.website %}
+        <a href="{{ cabinet.website }}" target="_blank" rel="nofollow noopener"
+           style="display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,255,255,.15);color:white;font-weight:600;font-size:13px;border-radius:10px;padding:11px 16px;text-decoration:none;border:1px solid rgba(255,255,255,.25);transition:all .2s;"
+           onmouseover="this.style.background='rgba(255,255,255,.25)'" onmouseout="this.style.background='rgba(255,255,255,.15)'">
+          🌐 Visiter le site web
+        </a>
+        {% endif %}
+      </div>
 
-    <!-- ADSENSE_SLOT_CABINET_SIDEBAR -->
+      <!-- ADSENSE_SLOT_CABINET_SIDEBAR -->
 
-    <!-- Autres cabinets dans la même ville -->
-    {% if nearby_cabinets %}
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-      <h3 class="font-bold text-gray-900 mb-3 text-sm">
-        Autres cabinets à {{ cabinet.city }}
-      </h3>
-      <ul class="space-y-3">
-        {% for nearby in nearby_cabinets %}
-        <li>
-          <a href="/cabinets/{{ nearby.slug }}/"
-             class="block hover:bg-blue-50 rounded-lg p-2 transition">
-            <p class="text-sm font-medium text-gray-800 hover:text-blue-700 leading-tight">{{ nearby.name }}</p>
-            {% if nearby.address %}
-            <p class="text-xs text-gray-400 mt-0.5 truncate">{{ nearby.address }}</p>
-            {% endif %}
+      <!-- Autres cabinets -->
+      {% if nearby_cabinets %}
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-header">Autres cabinets à {{ cabinet.city }}</div>
+        <div style="padding:10px;">
+          {% for nearby in nearby_cabinets %}
+          <a href="/cabinets/{{ nearby.slug }}/" class="nearby-link">
+            <div class="nearby-avatar">{{ nearby.name[0] | upper }}</div>
+            <div style="min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:var(--ink);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ nearby.name }}</div>
+              {% if nearby.address %}
+              <div style="font-size:11px;color:var(--ink-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;">{{ nearby.address }}</div>
+              {% endif %}
+            </div>
           </a>
-        </li>
-        {% endfor %}
-      </ul>
-      <a href="/villes/{{ city_slug }}/"
-         class="block mt-3 text-center text-xs text-blue-600 hover:underline font-medium">
-        Voir tous les cabinets à {{ cabinet.city }} →
-      </a>
-    </div>
-    {% endif %}
+          {% endfor %}
+          <a href="/villes/{{ city_slug }}/"
+             style="display:block;text-align:center;font-size:12px;font-weight:600;color:var(--green);text-decoration:none;padding:10px;margin-top:6px;border-top:1px solid var(--border);"
+             onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+            Tous les cabinets à {{ cabinet.city }} →
+          </a>
+        </div>
+      </div>
+      {% endif %}
 
+    </div>
   </aside>
 </div>
 
-<!-- Mobile sticky CTA bar (phone / website) — visible only on small screens -->
+<!-- Mobile sticky CTA bar -->
 {% if cabinet.phone or cabinet.website %}
-<div class="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-gray-200 bg-white shadow-lg px-4 py-3 flex gap-3">
+<div style="position:fixed;bottom:0;left:0;right:0;z-index:50;background:white;border-top:1px solid var(--border);box-shadow:0 -4px 20px rgba(26,26,46,.1);padding:12px 16px;display:flex;gap:10px;" class="md:hidden">
   {% if cabinet.phone %}
   <a href="tel:{{ cabinet.phone | replace(' ', '') }}"
-     class="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold rounded-xl py-3 text-sm hover:bg-blue-700 transition active:scale-95">
+     style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--green);color:white;font-weight:700;border-radius:12px;padding:14px;font-size:14px;text-decoration:none;">
     📞 {{ cabinet.phone }}
   </a>
   {% endif %}
   {% if cabinet.website %}
   <a href="{{ cabinet.website }}" target="_blank" rel="nofollow noopener"
-     class="flex items-center justify-center gap-1 border border-gray-300 text-gray-700 font-medium rounded-xl px-4 py-3 text-sm hover:bg-gray-50 transition active:scale-95">
+     style="display:flex;align-items:center;justify-content:center;border:1.5px solid var(--border);color:var(--ink-muted);border-radius:12px;padding:14px 18px;font-size:13px;text-decoration:none;">
     🌐 Site
   </a>
   {% endif %}
 </div>
-<!-- Spacer so content isn't hidden behind sticky bar -->
-<div class="md:hidden h-20"></div>
+<div class="md:hidden" style="height:72px;"></div>
 {% endif %}
 
 <!-- Schema.org LocalBusiness JSON-LD -->
@@ -327,7 +404,6 @@
 }
 </script>
 
-<!-- BreadcrumbList JSON-LD -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",

@@ -7,100 +7,234 @@
 {% block og_description %}{{ post.description }}{% endblock %}
 {% block og_url %}/blog/{{ post.slug }}/{% endblock %}
 
+{% block head %}
+<style>
+  .post-hero {
+    background: linear-gradient(135deg, var(--green) 0%, #0d5c44 100%);
+    padding: 64px 40px 80px;
+    position: relative; overflow: hidden;
+  }
+  .post-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .post-hero-inner { max-width: 760px; margin: 0 auto; position: relative; }
+
+  .post-layout { max-width: 1240px; margin: 0 auto; padding: 56px 40px; display: grid; grid-template-columns: 1fr 320px; gap: 56px; }
+  @media (max-width: 1024px) { .post-layout { grid-template-columns: 1fr; gap: 40px; } }
+  @media (max-width: 640px) { .post-layout { padding: 32px 20px; } .post-hero { padding: 48px 20px 56px; } }
+
+  /* Prose premium */
+  .prose-premium { font-size: 16px; line-height: 1.85; color: var(--ink-muted); }
+  .prose-premium h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.4rem; font-weight: 700;
+    color: var(--ink); margin-top: 2.5rem; margin-bottom: .9rem;
+    padding-bottom: .6rem; border-bottom: 2px solid var(--green-pale);
+  }
+  .prose-premium h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem; font-weight: 700;
+    color: var(--ink); margin-top: 1.8rem; margin-bottom: .6rem;
+  }
+  .prose-premium p { margin-bottom: 1.2rem; }
+  .prose-premium ul { list-style: none; padding: 0; margin-bottom: 1.2rem; }
+  .prose-premium ul li { padding: 6px 0 6px 22px; position: relative; }
+  .prose-premium ul li::before {
+    content: ''; position: absolute; left: 0; top: 14px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+  }
+  .prose-premium ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 1.2rem; }
+  .prose-premium li { margin-bottom: .4rem; }
+  .prose-premium strong { color: var(--ink); font-weight: 600; }
+  .prose-premium a { color: var(--green); text-decoration: underline; text-decoration-color: var(--green-pale); }
+  .prose-premium a:hover { color: var(--green-light); }
+  .prose-premium blockquote {
+    border-left: 4px solid var(--green);
+    background: var(--green-pale);
+    padding: 16px 20px; border-radius: 0 10px 10px 0;
+    margin: 1.5rem 0; font-style: italic;
+    color: var(--ink);
+  }
+  .prose-premium code {
+    background: var(--green-pale); color: var(--green);
+    padding: 2px 6px; border-radius: 4px; font-size: .9em;
+  }
+
+  /* Related card */
+  .related-card {
+    background: white; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+    padding: 20px; text-decoration: none;
+    display: flex; flex-direction: column; gap: 6px;
+    transition: box-shadow .2s, border-color .2s, transform .2s;
+  }
+  .related-card:hover { box-shadow: var(--shadow-md); border-color: var(--green); transform: translateY(-2px); }
+
+  /* Sidebar sticky */
+  .sidebar-sticky { position: sticky; top: 88px; }
+  .sidebar-card {
+    background: white; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+    overflow: hidden; margin-bottom: 20px;
+  }
+  .sidebar-card-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700;
+    color: var(--ink); text-transform: uppercase; letter-spacing: .06em;
+  }
+  .sidebar-card-body { padding: 20px; }
+</style>
+{% endblock %}
+
+{% block main_class %}p-0{% endblock %}
+
 {% block content %}
 
-<!-- Breadcrumb -->
-<nav class="text-sm text-gray-500 mb-6 flex flex-wrap items-center gap-1" aria-label="Fil d'Ariane">
-  <a href="/" class="hover:text-blue-600">Accueil</a>
-  <span class="text-gray-400">›</span>
-  <a href="/blog/" class="hover:text-blue-600">Blog</a>
-  <span class="text-gray-400">›</span>
-  <span class="text-gray-700 font-medium truncate max-w-xs">{{ post.title }}</span>
-</nav>
+<!-- Hero article -->
+<section class="post-hero">
+  <div class="post-hero-inner">
+    <nav style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.6);margin-bottom:20px;flex-wrap:wrap;">
+      <a href="/" style="color:rgba(255,255,255,.75);text-decoration:none;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,.75)'">Accueil</a>
+      <span>›</span>
+      <a href="/blog/" style="color:rgba(255,255,255,.75);text-decoration:none;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,.75)'">Blog</a>
+      <span>›</span>
+      <span style="color:white;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ post.title }}</span>
+    </nav>
 
-<div class="max-w-3xl">
-
-  <!-- En-tête article -->
-  <header class="mb-8">
-    <div class="flex items-center gap-3 mb-4">
-      <span class="text-xs font-semibold px-3 py-1 rounded-full"
-            style="background-color: {{ post.color }}22; color: {{ post.color }};">
-        {{ post.category }}
-      </span>
-      <span class="text-sm text-gray-400">{{ post.reading_time }} min de lecture</span>
-      <span class="text-gray-300">·</span>
-      <time class="text-sm text-gray-400" datetime="{{ post.date }}">{{ post.date_fr }}</time>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <span style="display:inline-block;background:rgba(255,255,255,.2);color:white;font-size:11px;font-weight:600;padding:4px 12px;border-radius:100px;">{{ post.category }}</span>
+      <span style="font-size:13px;color:rgba(255,255,255,.65);">{{ post.reading_time }} min de lecture</span>
+      <span style="color:rgba(255,255,255,.3);">·</span>
+      <time style="font-size:13px;color:rgba(255,255,255,.65);">{{ post.date_fr }}</time>
     </div>
-    <h1 class="text-3xl md:text-4xl font-bold text-gray-900 leading-tight mb-4">
+
+    <h1 style="font-family:'Syne',sans-serif;font-size:clamp(24px,3.5vw,40px);font-weight:800;color:white;line-height:1.2;margin-bottom:16px;">
       {{ post.title }}
     </h1>
-    <p class="text-lg text-gray-500 leading-relaxed">{{ post.description }}</p>
-    <div class="mt-6 border-t border-gray-100"></div>
-  </header>
+    <p style="font-size:16px;color:rgba(255,255,255,.75);line-height:1.65;max-width:640px;">{{ post.description }}</p>
+  </div>
+</section>
 
-  <!-- Contenu de l'article -->
-  <article class="prose-article text-gray-700 leading-relaxed mb-12">
-    {{ post.content | safe }}
-  </article>
+<!-- Layout 2 colonnes -->
+<div class="post-layout">
 
-  <!-- Styles prose inline -->
-  <style>
-    .prose-article h2 {
-      font-size: 1.35rem;
-      font-weight: 700;
-      color: #111827;
-      margin-top: 2rem;
-      margin-bottom: 0.75rem;
-    }
-    .prose-article p { margin-bottom: 1rem; }
-    .prose-article ul {
-      list-style: disc;
-      padding-left: 1.5rem;
-      margin-bottom: 1rem;
-    }
-    .prose-article li { margin-bottom: 0.35rem; }
-    .prose-article strong { color: #1e3a5f; }
-    .prose-article a { color: #2563eb; text-decoration: underline; }
-    .prose-article a:hover { color: #1d4ed8; }
-  </style>
+  <!-- Contenu principal -->
+  <div>
+    <article class="prose-premium">
+      {{ post.content | safe }}
+    </article>
 
-  <!-- Séparateur -->
-  <div class="border-t border-gray-100 mb-10"></div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:48px 0;">
 
-  <!-- CTA -->
-  <aside class="bg-blue-50 border border-blue-100 rounded-2xl p-7 mb-10 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-    <div class="flex-1">
-      <h3 class="font-bold text-gray-900 mb-1">Besoin d'un expert-comptable ?</h3>
-      <p class="text-sm text-gray-600">
-        Consultez notre annuaire pour trouver un cabinet comptable qualifié près de chez vous.
-      </p>
+    <!-- CTA box -->
+    <aside style="background:linear-gradient(135deg,var(--green-pale),#f0faf6);border:1.5px solid rgba(10,124,92,.15);border-radius:var(--radius);padding:32px;display:flex;flex-direction:column;gap:16px;margin-bottom:48px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:44px;height:44px;background:linear-gradient(135deg,var(--green),var(--green-light));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📊</div>
+        <div>
+          <h3 style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--ink);margin-bottom:4px;">Besoin d'un expert-comptable ?</h3>
+          <p style="font-size:13px;color:var(--ink-muted);line-height:1.6;">Consultez notre annuaire pour trouver un cabinet comptable qualifié près de chez vous.</p>
+        </div>
+      </div>
+      <a href="/villes/" style="display:inline-block;background:var(--green);color:white;font-weight:600;padding:12px 24px;border-radius:10px;font-size:14px;text-decoration:none;align-self:flex-start;box-shadow:0 4px 12px rgba(10,124,92,.3);transition:all .2s;"
+         onmouseover="this.style.background='var(--green-light)';this.style.transform='translateY(-1px)'"
+         onmouseout="this.style.background='var(--green)';this.style.transform='none'">
+        Trouver un cabinet →
+      </a>
+    </aside>
+
+    <!-- Articles liés -->
+    {% if other_posts %}
+    <section>
+      <h2 style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--ink);margin-bottom:20px;">Autres articles du blog</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;">
+        {% for p in other_posts %}
+        <a href="/blog/{{ p.slug }}/" class="related-card">
+          <span style="font-size:11px;font-weight:600;color:{{ p.color }};">{{ p.category }}</span>
+          <h3 style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--ink);line-height:1.4;">{{ p.title }}</h3>
+          <span style="font-size:12px;color:var(--green);font-weight:600;margin-top:4px;">Lire →</span>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+  </div>
+
+  <!-- Sidebar -->
+  <aside>
+    <div class="sidebar-sticky">
+
+      <!-- Table des matières (statique) -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Dans cet article</div>
+        <div class="sidebar-card-body">
+          <div style="font-size:13px;color:var(--ink-muted);line-height:1.9;" id="toc-placeholder">
+            <p style="color:var(--ink-faint);font-style:italic;font-size:12px;">Les titres de l'article apparaissent ici.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Meta article -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">Informations</div>
+        <div class="sidebar-card-body" style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:32px;height:32px;background:var(--green-pale);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;">🏷️</div>
+            <div>
+              <div style="font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;">Catégorie</div>
+              <div style="font-size:13px;font-weight:600;color:var(--ink);">{{ post.category }}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:32px;height:32px;background:var(--green-pale);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;">📅</div>
+            <div>
+              <div style="font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;">Date</div>
+              <div style="font-size:13px;font-weight:600;color:var(--ink);">{{ post.date_fr }}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:32px;height:32px;background:var(--green-pale);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;">⏱️</div>
+            <div>
+              <div style="font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;">Lecture</div>
+              <div style="font-size:13px;font-weight:600;color:var(--ink);">{{ post.reading_time }} min</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA sidebar -->
+      <div style="background:linear-gradient(135deg,var(--green),#0d5c44);border-radius:var(--radius);padding:24px;">
+        <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:white;margin-bottom:8px;">Trouvez votre comptable</div>
+        <p style="font-size:12px;color:rgba(255,255,255,.75);line-height:1.6;margin-bottom:16px;">Annuaire des cabinets comptables dans toute la France.</p>
+        <a href="/villes/" style="display:block;text-align:center;background:white;color:var(--green);font-weight:600;padding:10px;border-radius:8px;font-size:13px;text-decoration:none;transition:all .2s;"
+           onmouseover="this.style.background='var(--green-pale)'"
+           onmouseout="this.style.background='white'">
+          Voir l'annuaire →
+        </a>
+      </div>
     </div>
-    <a href="/"
-       class="flex-shrink-0 bg-blue-600 text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-blue-700 transition text-sm whitespace-nowrap">
-      Trouver un cabinet →
-    </a>
   </aside>
 
-  <!-- Navigation vers autres articles -->
-  {% if other_posts %}
-  <section>
-    <h2 class="text-lg font-bold text-gray-900 mb-4">Autres articles du blog</h2>
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {% for p in other_posts %}
-      <a href="/blog/{{ p.slug }}/"
-         class="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition p-5 flex flex-col gap-2">
-        <span class="text-xs font-semibold" style="color: {{ p.color }};">{{ p.category }}</span>
-        <h3 class="font-semibold text-gray-900 group-hover:text-blue-700 transition text-sm leading-snug">
-          {{ p.title }}
-        </h3>
-        <span class="text-xs text-blue-600 group-hover:underline mt-auto">Lire →</span>
-      </a>
-      {% endfor %}
-    </div>
-  </section>
-  {% endif %}
-
 </div>
+
+<!-- Table des matières JS (auto-generate from h2 tags) -->
+<script>
+(function(){
+  var toc = document.getElementById('toc-placeholder');
+  if (!toc) return;
+  var headings = document.querySelectorAll('.prose-premium h2');
+  if (!headings.length) return;
+  var html = '';
+  headings.forEach(function(h, i) {
+    var id = 'section-' + i;
+    h.id = id;
+    html += '<a href="#' + id + '" style="display:block;color:var(--ink-muted);text-decoration:none;padding:3px 0;font-size:13px;border-left:2px solid var(--border);padding-left:10px;transition:all .2s;" onmouseover="this.style.color=\'var(--green)\';this.style.borderColor=\'var(--green)\'" onmouseout="this.style.color=\'var(--ink-muted)\';this.style.borderColor=\'var(--border)\'">' + h.textContent + '</a>';
+  });
+  toc.innerHTML = html;
+})();
+</script>
 
 <!-- JSON-LD Article -->
 <script type="application/ld+json">

@@ -7,71 +7,132 @@
 {% block og_description %}Guides pratiques de comptabilité et fiscalité pour les entrepreneurs et indépendants français.{% endblock %}
 {% block og_url %}/blog/{% endblock %}
 
+{% block head %}
+<style>
+  .blog-hero {
+    background: linear-gradient(135deg, var(--green) 0%, #0d5c44 100%);
+    padding: 72px 40px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .blog-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .blog-hero-inner { max-width: 800px; margin: 0 auto; position: relative; }
+  .blog-card {
+    background: white;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: box-shadow .25s, border-color .25s, transform .25s;
+    text-decoration: none;
+  }
+  .blog-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--green);
+    transform: translateY(-3px);
+  }
+  .blog-card-accent { height: 4px; width: 100%; }
+  .blog-card-body { padding: 24px; flex: 1; display: flex; flex-direction: column; }
+  .blog-badge {
+    display: inline-block;
+    font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 100px;
+  }
+  .blog-cta {
+    background: var(--ink);
+    border-radius: var(--radius-xl);
+    padding: 56px 48px;
+    text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .blog-cta::before {
+    content: '';
+    position: absolute; top: -40%; right: -10%;
+    width: 400px; height: 400px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(10,124,92,.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  @media (max-width: 640px) {
+    .blog-hero { padding: 48px 20px 56px; }
+    .blog-cta { padding: 40px 24px; }
+  }
+</style>
+{% endblock %}
+
+{% block main_class %}p-0{% endblock %}
+
 {% block content %}
 
-<!-- Breadcrumb -->
-<nav class="breadcrumb text-sm text-gray-500 mb-6 flex items-center gap-1" aria-label="Fil d'Ariane">
-  <a href="/" class="hover:text-blue-600">Accueil</a>
-  <span class="text-gray-400">›</span>
-  <span class="text-gray-700 font-medium">Blog</span>
-</nav>
-
-<!-- Hero -->
-<section class="mb-10">
-  <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Blog Comptabilité</h1>
-  <p class="text-gray-500 text-lg max-w-2xl">
-    Conseils pratiques, guides fiscaux et actualités pour les <strong>entrepreneurs</strong>,
-    <strong>indépendants</strong> et <strong>PME</strong> françaises.
-  </p>
+<!-- Hero Blog -->
+<section class="blog-hero">
+  <div class="blog-hero-inner">
+    <nav class="flex items-center gap-2 text-sm mb-6" style="color:rgba(255,255,255,.6);">
+      <a href="/" style="color:rgba(255,255,255,.7);" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,.7)'">Accueil</a>
+      <span>›</span>
+      <span style="color:white;">Blog</span>
+    </nav>
+    <span class="section-label" style="background:rgba(255,255,255,.15);color:white;">Ressources &amp; Guides</span>
+    <h1 style="font-family:'Syne',sans-serif;font-size:clamp(28px,4vw,48px);font-weight:800;color:white;line-height:1.15;margin:12px 0 16px;">
+      Blog Comptabilité
+    </h1>
+    <p style="font-size:17px;color:rgba(255,255,255,.75);max-width:540px;line-height:1.7;">
+      Conseils pratiques, guides fiscaux et actualités pour les <strong style="color:white;">entrepreneurs</strong>,
+      <strong style="color:white;">indépendants</strong> et <strong style="color:white;">PME</strong> françaises.
+    </p>
+  </div>
 </section>
 
-<!-- Grille d'articles -->
-<section class="mb-16">
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Contenu principal -->
+<div style="max-width:1240px;margin:0 auto;padding:56px 40px;">
+
+  <!-- Grille d'articles -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:28px;margin-bottom:72px;">
     {% for post in posts %}
-    <a href="/blog/{{ post.slug }}/"
-       class="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition flex flex-col overflow-hidden">
-      <!-- Bandeau couleur catégorie -->
-      <div class="h-2 w-full" style="background-color: {{ post.color }};"></div>
-      <div class="p-6 flex flex-col flex-1">
-        <!-- Catégorie + temps de lecture -->
-        <div class="flex items-center gap-2 mb-3">
-          <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
-                style="background-color: {{ post.color }}22; color: {{ post.color }};">
-            {{ post.category }}
-          </span>
-          <span class="text-xs text-gray-400">{{ post.reading_time }} min de lecture</span>
+    <a href="/blog/{{ post.slug }}/" class="blog-card">
+      <div class="blog-card-accent" style="background:{{ post.color }};"></div>
+      <div class="blog-card-body">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+          <span class="blog-badge" style="background:{{ post.color }}18;color:{{ post.color }};">{{ post.category }}</span>
+          <span style="font-size:12px;color:var(--ink-faint);">{{ post.reading_time }} min</span>
         </div>
-        <!-- Titre -->
-        <h2 class="font-bold text-gray-900 group-hover:text-blue-700 transition text-base leading-snug mb-3">
+        <h2 style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--ink);line-height:1.4;margin-bottom:10px;">
           {{ post.title }}
         </h2>
-        <!-- Description -->
-        <p class="text-sm text-gray-500 leading-relaxed flex-1 mb-4">
+        <p style="font-size:13px;color:var(--ink-muted);line-height:1.7;flex:1;margin-bottom:18px;">
           {{ post.description }}
         </p>
-        <!-- Date + lien -->
-        <div class="flex items-center justify-between mt-auto">
-          <span class="text-xs text-gray-400">{{ post.date_fr }}</span>
-          <span class="text-xs text-blue-600 font-medium group-hover:underline">Lire l'article →</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;">
+          <time style="font-size:12px;color:var(--ink-faint);">{{ post.date_fr }}</time>
+          <span style="font-size:12px;font-weight:600;color:var(--green);">Lire l'article →</span>
         </div>
       </div>
     </a>
     {% endfor %}
   </div>
-</section>
 
-<!-- Bannière CTA -->
-<section class="bg-navy-800 rounded-2xl p-8 text-center mb-10" style="background-color:#162d4a;">
-  <h2 class="text-xl font-bold text-white mb-2">Besoin d'un expert-comptable ?</h2>
-  <p class="text-blue-200 text-sm mb-5">
-    Trouvez un cabinet comptable près de chez vous parmi nos {{ total_cabinets }} cabinets référencés.
-  </p>
-  <a href="/"
-     class="inline-block bg-white text-navy-800 font-semibold px-6 py-2.5 rounded-lg hover:bg-blue-50 transition text-sm"
-     style="color:#162d4a;">
-    Consulter l'annuaire →
-  </a>
-</section>
+  <!-- CTA -->
+  <div class="blog-cta">
+    <div style="position:relative;z-index:1;">
+      <span class="section-label" style="background:rgba(10,124,92,.2);color:var(--green-light);">Annuaire</span>
+      <h2 style="font-family:'Syne',sans-serif;font-size:clamp(22px,3vw,32px);font-weight:800;color:white;margin:12px 0 10px;">
+        Besoin d'un expert-comptable ?
+      </h2>
+      <p style="color:rgba(255,255,255,.6);font-size:15px;margin-bottom:28px;max-width:480px;margin-left:auto;margin-right:auto;">
+        Trouvez un cabinet comptable près de chez vous parmi nos {{ total_cabinets }} cabinets référencés.
+      </p>
+      <a href="/villes/" style="display:inline-block;background:var(--green);color:white;font-weight:600;padding:14px 32px;border-radius:12px;font-size:14px;text-decoration:none;box-shadow:0 4px 16px rgba(10,124,92,.4);transition:all .2s;"
+         onmouseover="this.style.background='var(--green-light)';this.style.transform='translateY(-2px)'"
+         onmouseout="this.style.background='var(--green)';this.style.transform='translateY(0)'">
+        Consulter l'annuaire →
+      </a>
+    </div>
+  </div>
+
+</div>
 
 {% endblock %}
