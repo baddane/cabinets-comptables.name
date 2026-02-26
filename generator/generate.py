@@ -443,7 +443,13 @@ def generate_404(env: Environment) -> None:
     log.info("  ✅ Page 404 générée")
 
 
-def generate_contact() -> None:
+def generate_contact(env) -> None:
+    tpl = env.get_template("contact.html")
+    html = tpl.render()
+    write_file(OUTPUT_DIR / "contact" / "index.html", html)
+    log.info("  ✅ Page contact générée")
+
+def _generate_contact_OLD() -> None:
     html = """<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -556,8 +562,8 @@ def generate_contact() -> None:
 
 </body>
 </html>"""
-    write_file(OUTPUT_DIR / "contact" / "index.html", html)
-    log.info("  ✅ Page contact générée")
+    # (kept for reference — now handled by generate_contact above)
+    pass
 
 
 def generate_mentions_legales() -> None:
@@ -688,7 +694,7 @@ def main():
     generate_robots(OUTPUT_DIR)
     generate_404(env)
     generate_mentions_legales()
-    generate_contact()
+    generate_contact(env)
     generate_politique_de_confidentialite(env)
     generate_blog(env, blog_posts, len(data))
     copy_static_assets()

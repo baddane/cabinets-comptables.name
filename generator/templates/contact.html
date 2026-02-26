@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Contact — Cabinets-Comptables.name{% endblock %}
+{% block description %}Contactez Cabinets-Comptables.name pour toute question, signalement d'erreur ou demande de mise à jour concernant l'annuaire des cabinets comptables.{% endblock %}
+{% block canonical %}/contact/{% endblock %}
+{% block og_title %}Contact — Cabinets-Comptables.name{% endblock %}
+{% block og_description %}Signalez une erreur, demandez une mise à jour ou contactez notre équipe pour toute question relative à l'annuaire.{% endblock %}
+{% block og_url %}/contact/{% endblock %}
+
+{% block head %}
+<style>
+  .contact-hero {
+    background: linear-gradient(135deg, var(--green) 0%, #0d5c44 100%);
+    padding: 56px 40px 68px;
+    position: relative; overflow: hidden;
+  }
+  .contact-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .contact-hero-inner { max-width: 760px; margin: 0 auto; position: relative; }
+
+  .contact-layout { max-width: 900px; margin: 0 auto; padding: 52px 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  @media (max-width: 768px) { .contact-layout { grid-template-columns: 1fr; padding: 32px 20px; } }
+  @media (max-width: 640px) { .contact-hero { padding: 40px 20px 52px; } }
+
+  .form-label { font-size: 12px; font-weight: 600; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .07em; display: block; margin-bottom: 8px; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; padding: 11px 14px;
+    background: var(--cream); border: 1.5px solid var(--border);
+    border-radius: 10px; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; color: var(--ink); outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(10,124,92,.12);
+    background: white;
+  }
+  .form-textarea { resize: none; }
+
+  .info-card {
+    background: white; border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+    padding: 22px;
+  }
+  .info-card-icon {
+    width: 40px; height: 40px; border-radius: 11px;
+    background: var(--green-pale); display: flex; align-items: center;
+    justify-content: center; font-size: 18px; margin-bottom: 14px;
+  }
+  .info-card h2 {
+    font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+    color: var(--ink); margin-bottom: 8px;
+  }
+  .info-card p { font-size: 13px; color: var(--ink-muted); line-height: 1.75; }
+
+  .delay-badge {
+    background: var(--green-pale); border: 1px solid rgba(10,124,92,.15);
+    border-radius: var(--radius); padding: 16px 18px;
+    display: flex; align-items: center; gap: 12px;
+  }
+</style>
+{% endblock %}
+
+{% block main_class %}p-0{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<section class="contact-hero">
+  <div class="contact-hero-inner">
+    <nav style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.6);margin-bottom:16px;">
+      <a href="/" style="color:rgba(255,255,255,.75);text-decoration:none;" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,.75)'">Accueil</a>
+      <span>›</span>
+      <span style="color:white;">Contact</span>
+    </nav>
+    <span class="section-label" style="background:rgba(255,255,255,.15);color:white;">Nous écrire</span>
+    <h1 style="font-family:'Syne',sans-serif;font-size:clamp(26px,4vw,42px);font-weight:800;color:white;line-height:1.15;margin:12px 0 12px;">Contact</h1>
+    <p style="font-size:16px;color:rgba(255,255,255,.75);max-width:520px;line-height:1.65;">
+      Une erreur dans notre annuaire&nbsp;? Une mise à jour à signaler&nbsp;? Écrivez-nous, nous répondons sous 5 jours ouvrés.
+    </p>
+  </div>
+</section>
+
+<!-- Layout -->
+<div class="contact-layout">
+
+  <!-- Formulaire -->
+  <div style="background:white;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow-sm);padding:28px;">
+    <h2 style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--ink);margin-bottom:22px;">Envoyer un message</h2>
+    <form action="mailto:contact@cabinets-comptables.name" method="GET" style="display:flex;flex-direction:column;gap:18px;">
+      <div>
+        <label for="subject" class="form-label">Objet</label>
+        <select id="subject" name="subject" class="form-select">
+          <option value="Signalement d'erreur">Signalement d'erreur</option>
+          <option value="Mise à jour d'informations">Mise à jour d'informations</option>
+          <option value="Demande de suppression">Demande de suppression</option>
+          <option value="Partenariat">Partenariat</option>
+          <option value="Autre">Autre</option>
+        </select>
+      </div>
+      <div>
+        <label for="body" class="form-label">Message</label>
+        <textarea id="body" name="body" rows="6" class="form-textarea"
+                  placeholder="Décrivez votre demande..."></textarea>
+      </div>
+      <button type="submit"
+              style="background:var(--green);color:white;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;padding:13px;border:none;border-radius:10px;cursor:pointer;box-shadow:0 4px 12px rgba(10,124,92,.3);transition:all .2s;"
+              onmouseover="this.style.background='var(--green-light)';this.style.transform='translateY(-1px)'"
+              onmouseout="this.style.background='var(--green)';this.style.transform='none'">
+        Envoyer par e-mail
+      </button>
+    </form>
+    <p style="font-size:12px;color:var(--ink-faint);margin-top:14px;line-height:1.6;">
+      Ce formulaire ouvre votre client e-mail. Vous pouvez aussi écrire directement à
+      <a href="mailto:contact@cabinets-comptables.name"
+         style="color:var(--green);text-decoration:none;"
+         onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+        contact@cabinets-comptables.name
+      </a>.
+    </p>
+  </div>
+
+  <!-- Infos -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <div class="info-card">
+      <div class="info-card-icon">🔍</div>
+      <h2>Signaler une erreur</h2>
+      <p>Les données de cet annuaire proviennent de sources publiques et sont mises à jour mensuellement. Si vous constatez une erreur (adresse incorrecte, cabinet fermé, numéro erroné), merci de nous le signaler.</p>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card-icon">🗑️</div>
+      <h2>Demande de suppression</h2>
+      <p>Conformément au RGPD, vous pouvez demander la suppression des informations professionnelles vous concernant. Précisez le nom du cabinet et la ville dans votre message.</p>
+    </div>
+
+    <div class="delay-badge">
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(10,124,92,.15);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">⏱️</div>
+      <p style="font-size:13px;color:var(--ink);line-height:1.6;"><strong style="color:var(--green);">Délai de réponse :</strong> nous traitons les demandes sous 5 jours ouvrés.</p>
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}
